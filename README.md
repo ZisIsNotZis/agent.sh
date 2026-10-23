@@ -1,8 +1,15 @@
 # agent.sh
 
-An absolutely minimal but fully functional agent: one bash script that owns a stock bash as its hands, so the model can run commands, spawn subprocesses, spawn subagents, set timers and leave itself reminders.
+An agent that is given no tools.
+What the model writes is not searched for tool calls: it is handed to one long-lived bash and executed, and what that bash printed comes back to the model as the next message.
+The harness is the outer bash — it owns the API call, the trajectory, the labels and the truncation — and its hands are a `setsid bash` with no tty, reached over a `coproc`.
+Two pipes carry only control: block text in, and a slip carrying `{nonce, exit status, byte count}` out, while the output itself sits in a file the outer reads by byte count.
+That arithmetic boundary is the one idea here, and the project exists to see how far an agent gets with nothing else.
+The deliverable is a trajectory from a real unsupervised run, not a feature list.
 
-**Not for** anyone who wants a sandboxed, multi-user or networked agent service, and not for anyone who wants a Python/TUI harness. The whole surface is three shell functions and two pipes.
+**Not for** anyone who wants a sandboxed, multi-user or networked agent service, or a Python/TUI harness.
+Nothing is sandboxed on purpose: the harness sits outside everything the model can reach, and the model's hands are the shell state itself — `cd`, env, `&`, `wait -n -p`.
+Two shell functions are injected through `BASH_ENV` (`bgrun`, `bgwait`) and nothing else is.
 
 ## Status
 
