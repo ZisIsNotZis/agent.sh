@@ -1,0 +1,2 @@
+# the harness writes one session per run here, and nothing else in this tree is generated
+.session/

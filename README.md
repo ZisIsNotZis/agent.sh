@@ -14,12 +14,18 @@ Two shell functions are injected through `BASH_ENV` (`bgrun`, `bgwait`) and noth
 ## Status
 
 Owned by a manager since 2026-10-23; the roadmap is `docs/roadmap.md` and one milestone is running.
-No code, no licence and no runnable example yet — the roadmap names each as a package or a limit.
+The boundary loop is in and green: `agent.sh` executes blocks and returns them labelled, with `bash test/run.sh` passing sixteen invariants on a scripted input, so no API is called yet and no real trajectory exists.
 The design was settled with the person on 2026-10-22 and lives in `docs/design.md`.
+No licence and no unattended run yet — the roadmap names both, the second as the milestone.
 
 ## How to start
 
-Read `AGENTS.md` for what this directory is and how it is held, then `docs/roadmap.md` for what is being built and what checks it off.
+```
+bash agent.sh --blocks examples/tour.sh
+```
+
+That is the harness with the model's place taken by a file: each block runs in one long-lived bash and comes back as the message a model would read.
+Then read `AGENTS.md` for what this directory is and how it is held, and `docs/roadmap.md` for what is being built and what checks it off.
 `docs/design.md` is the record of the design and of every branch that lost, with the measurement that killed it.
 
 ## How to continue
