@@ -13,17 +13,19 @@ Two shell functions are injected through `BASH_ENV` (`bgrun`, `bgwait`) and noth
 
 ## Status
 
-Not started. There is no manager, no roadmap and no code. The design was settled with the person on 2026-10-22 and is recorded in one place: `inbox/2026-10-22-design-tree.md`. That file is the only home for the design facts until a manager wakes, lands them in the document that owns them, and deletes it.
-
-The four questions that are still the person's are at the end of that message. The degree of this project is `unknown` in `docs/plan/portfolio.tsv` because he has not stated one.
+Owned by a manager since 2026-10-23; the roadmap is `docs/roadmap.md` and one milestone is running.
+No code, no licence and no runnable example yet — the roadmap names each as a package or a limit.
+The design was settled with the person on 2026-10-22 and lives in `docs/design.md`.
 
 ## How to start
 
-Read `inbox/` first. Nothing else exists yet; this file says only what the project is and where its one record sits.
+Read `AGENTS.md` for what this directory is and how it is held, then `docs/roadmap.md` for what is being built and what checks it off.
+`docs/design.md` is the record of the design and of every branch that lost, with the measurement that killed it.
 
 ## How to continue
 
-When a manager owns this directory it writes its own document here (purpose, roadmap, decided facts and open questions, evidence pointers) and this file becomes the front door to that document. Until then, `inbox/` is the whole project.
+Take the next open package in `docs/roadmap.md` whose dependencies are landed, and write its status back into that table in the same change that lands it.
+Messages to this project land in `inbox/`; the roadmap owns the milestone, so nothing else may hold it.
 
 ## Limits
 
