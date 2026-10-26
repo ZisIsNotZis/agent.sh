@@ -50,6 +50,12 @@ Every package runs on idle machine time unless it is marked as spending metered 
 | P7 | independent review of M1 | P6 | done, two passes, verdict `pass-with-findings` each time; the findings are `docs/design.md` D10, everything that changed the tree was fixed and re-checked before the demo was regenerated, and the four that remain are P8 | one verdict from a reviewer who did not write it |
 | P8 | shrink the shadowing class: report the slip as a null command whose redirection names a file the harness watches, so the status is written by the shell's parser rather than by a builtin a block can shadow. What is left after it is a block that steals its own next command off the stream — the block shares the shell, so that one cannot be closed without a sandbox, and the AC says so rather than promising the whole residual away | P7 | open, and it is a design change rather than a patch | the reviewer's `builtin`, `eval`, `read`, `printf` and `wc` reproductions become invariants that all report honestly — the claimed status equals the block's real status — while a block that reads its next command off stdin is documented as the remaining hole, with its reproduction in `docs/design.md` |
 
+### P8 is held, not refused, and this is the decision
+
+P8 would replace the slip reporter with a null command whose redirection names a file the harness watches, which shrinks "a block can shadow a builtin and lie" to "a block can steal its own next command off the shared stream".
+It is held rather than done in this pass, and the cost is stated: until it lands, a block that shadows `builtin` can state a status the harness believes when the size matches the file, and `deepseek-flash` does not do that — the measured failures were markup and hangs, not attacks.
+The reason to hold is that the reporter is what M1's evidence rests on: changing it makes `runs/2026-10-26-demo/` stale for the second time, and a run plus a review is a night's work. If the person's verdict on the demo is that the harness is the interesting part, P8 is the first package afterwards; if the verdict is that the agent is, P8 waits behind whatever the verdict opens.
+
 ## Decided, and under what assumption
 
 This project runs at `decide`: the decisions the person would otherwise take are taken here and recorded as assumptions with what they cost, so he can overturn them one by one.
