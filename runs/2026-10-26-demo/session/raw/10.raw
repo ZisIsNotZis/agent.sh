@@ -1,0 +1,51 @@
+coverage over 30 seeds: cycle=23 order=7 fail=0
+--- edge cases ---
+e_empty: PASS valid-order
+e_rep: PASS cycle-valid
+e_short: PASS valid-order
+e_self: PASS cycle-valid
+--- depsort source ---
+     1	#!/usr/bin/env bash
+     2	# depsort: reads "a b" lines ("a needs b") from FILE or stdin.
+     3	# Prints one build order (dependencies first), one package per line.
+     4	# On a cycle prints "cycle: <packages in the cycle>" and exits 1.
+     5	set -u
+     6	awk '
+     7	  NF >= 2 {
+     8	    a = $1; b = $2
+     9	    if (!(a in seen)) { seen[a]; order[++n] = a }
+    10	    if (!(b in seen)) { seen[b]; order[++n] = b }
+    11	    k = b SUBSEP a                      # build b before a
+    12	    if (!(k in dedup)) { dedup[k] = 1; adj[b] = adj[b] " " a; indeg[a]++ }
+    13	    need[a] = need[a] " " b             # a needs b (for cycle extraction)
+    14	  }
+    15	  END {
+    16	    for (i = 1; i <= n; i++) if (indeg[order[i]] + 0 == 0) q[++tail] = order[i]
+    17	    head = 1; out = 0
+    18	    while (head <= tail) {
+    19	      u = q[head++]; res[++out] = u
+    20	      m = split(adj[u], vs, " ")
+    21	      for (j = 1; j <= m; j++) if (--indeg[vs[j]] == 0) q[++tail] = vs[j]
+    22	    }
+    23	    if (out == n) { for (i = 1; i <= n; i++) print res[i]; exit 0 }
+    24	    # Cycle: walk needs-edges among unresolved nodes until one repeats.
+    25	    for (i = 1; i <= n; i++) if (indeg[order[i]] > 0) { start = order[i]; break }
+    26	    pos = 0; u = start
+    27	    while (!(u in where)) {
+    28	      where[u] = ++pos; path[pos] = u; nxt = ""
+    29	      m = split(need[u], vs, " ")
+    30	      for (j = 1; j <= m; j++) if (indeg[vs[j]] > 0) { nxt = vs[j]; break }
+    31	      u = nxt
+    32	    }
+    33	    cyc = ""
+    34	    for (i = where[u]; i <= pos; i++) cyc = cyc (cyc == "" ? "" : " ") path[i]
+    35	    print "cycle: " cyc
+    36	    exit 1
+    37	  }
+    38	' "${1:--}"
+--- sizes ---
+  38 bin/depsort
+  30 gen.sh
+  60 check.sh
+ 128 total
+---

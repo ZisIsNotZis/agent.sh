@@ -1,0 +1,17 @@
+total 12
+drwxrwx--- 1 z z   64 Oct 26 21:44 .
+drwxrwx--- 1 z z  118 Oct 26 21:43 ..
+drwxrwx--- 1 z z   14 Oct 26 21:44 bin
+-rwxrwx--- 1 z z 1835 Oct 26 21:44 check.sh
+-rw-rw---- 1 z z    4 Oct 26 21:44 filearg.txt
+-rwxrwx--- 1 z z  743 Oct 26 21:44 gen.sh
+drwxrwx--- 1 z z    0 Oct 26 21:44 logs
+  27 bin/depsort
+  20 gen.sh
+  48 check.sh
+  95 total
+  for ((i=0;i<len;i++)); do cyc+=("pk$(( RANDOM % 12 ))"); done
+  for ((i=0;i<len;i++)); do echo "${cyc[$i]} ${cyc[$(((i+1)%len))]}"; done
+fi
+bash: eval: line 197: syntax error near unexpected token `newline'
+bash: eval: line 197: `</｜｜DSML｜｜ parameter>'

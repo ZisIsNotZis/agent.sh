@@ -71,6 +71,10 @@ Running. The loop is closed and honest about what it has proven:
 
 The milestone, its four terms, the not-doing list and every decision taken with its cost are in [`docs/roadmap.md`](docs/roadmap.md). Whether the run is any good is the one judgement left to a reader.
 
+## The demo run
+
+[`runs/2026-10-26-demo/`](runs/2026-10-26-demo/) is one unattended run, committed as it happened: the trajectory, the meter, the requests, the workspace the agent left behind, and the command that regenerates all of it. Seventeen turns, one background job, one truncation, two compactions, 86k prompt tokens, and — the part that matters — `bash check-prefix.sh` finds every prefix intact across it. `notes.md` points at the line each piece of evidence sits on, and says what the run cost to get.
+
 ## Design, and what it cost
 
 [`docs/design.md`](docs/design.md) records the settled design and every branch that lost, with the measurement that killed it; [`probes/`](probes/) re-runs those measurements in about a minute, including the two that are supposed to fail.

@@ -1,0 +1,61 @@
+if (( RANDOM % 4 == 0 )); then
+  len=$(( RANDOM % 3 + 2 ))
+  declare -a c=()
+  for ((i=0;i<len;i++)); do c+=("${pool[$(( RANDOM % TOP ))]}"); done
+  for ((i=0;i<len;i++)); do echo "${c[$i]} ${c[$(((i+1)%len))]}"; done
+fi
+syntax_status=0
+--- smoke: gen seeds 1..5 ---
+== seed 1 ==
+== seed 2 ==
+pk0 pk3
+pk4 pk0
+pk1 pk0
+pk0 pk1
+pk4 pk1
+pk3 pk3
+pk3 pk2
+pk4 pk0
+pk2 pk3
+pk3 pk3
+pk1 pk3
+pk4 pk4
+pk4 pk3
+pk3 pk1
+pk1 pk4
+pk4 pk4
+pk4 pk3
+== seed 3 ==
+pk0 pk0
+pk1 pk4
+pk0 pk1
+pk0 pk0
+pk0 pk0
+pk2 pk3
+pk2 pk1
+pk1 pk3
+pk2 pk2
+pk2 pk0
+pk1 pk4
+pk1 pk1
+== seed 4 ==
+pk0 pk1
+pk3 pk3
+pk0 pk2
+pk3 pk4
+pk3 pk0
+pk4 pk0
+pk0 pk3
+pk0 pk1
+pk0 pk3
+pk0 pk3
+pk1 pk3
+pk0 pk0
+pk0 pk3
+== seed 5 ==
+pk2 pk4
+pk0 pk0
+pk0 pk1
+pk1 pk4
+pk1 pk4
+---

@@ -1,0 +1,5 @@
+q
+p
+status=0
+bash: eval: line 260: syntax error near unexpected token `parameter'
+bash: eval: line 260: `for s in 1 2 3; do ./gen.sh $s > c$s.in; echo "seed $s: $(./check.sh c$s.in $PWD/bin/depsort)"; done</｜｜DSML｜｜ parameter>'

@@ -1,0 +1,17 @@
+Your current directory is your workspace. Build and then verify a small tool here, and do not write outside it.
+
+The tool is `depsort`: it reads dependency pairs from a file, one pair per line, `a b` meaning "a needs b", and prints one valid build order, one package per line. If the input contains a cycle it must print `cycle: <the packages in it>` and exit 1. It must also survive repeated pairs, a package that appears only on the right, and an empty file. Read its input either from a file argument or from stdin.
+
+Write it in bash or awk — no Python, no compiler — so the whole tool is text you can show.
+
+Then verify it for real, and do these four things in this order:
+1. Write your own case generator and checker.
+2. Start the 300-case run with `bgrun` so your turn is not blocked, then do something else useful for one block, then `bgwait` to reap it.
+3. Print the entire per-case log with one `cat` in one block. It is longer than a screenful, so it comes back truncated with the path of the full file — read that file back with `sed -n`, `head` or `tail`, and report how many passed.
+4. Write RESULT.md here: what you built, the exact command that proves it, and the numbers you measured.
+
+Steps 2 and 3 are checked, not suggestions: the case run must be started with `bgrun` and reaped with `bgwait`, so that its completion arrives as a `Job:` message, and the block that prints the log must come back with a `[truncated:` header naming the full file.
+
+You have about 25 turns. Plan before you act, keep the tool small, and stop when RESULT.md is written.
+
+Do not probe the harness and do not test how your input is delivered: it is a bash block, executed, and its output comes back. Every block must finish by itself — nothing can type at it.

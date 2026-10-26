@@ -1,0 +1,20 @@
+--- head ---
+case 001 PASS valid-order
+case 002 PASS cycle-valid
+case 003 PASS cycle-valid
+case 004 PASS cycle-valid
+case 005 PASS cycle-valid
+case 006 PASS valid-order
+case 007 PASS cycle-valid
+case 008 PASS cycle-valid
+case 009 PASS cycle-valid
+case 010 PASS cycle-valid
+case 011 PASS cycle-valid
+case 012 PASS cycle-valid
+--- counts ---
+PASS=300  FAIL=0  total=300
+cycle-valid=247  valid-order=53
+--- tail ---
+case 299 PASS cycle-valid
+case 300 PASS valid-order
+RUN-DONE

@@ -1,0 +1,42 @@
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 1  PASS valid-order
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 2  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 3  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 4  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 5  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 6  PASS valid-order
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 7  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 8  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 9  PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 10 PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 11 PASS cycle-valid
+./gen.sh: line 28: syntax error near unexpected token `('
+./gen.sh: line 28: `  declare -ac=()'
+seed 12 PASS cycle-valid
+empty:          PASS valid-order
+repeats:        PASS valid-order
+one-token line: PASS valid-order
+self-loop:      PASS cycle-valid
+bash: eval: line 539: syntax error near unexpected token `newline'
+bash: eval: line 539: `</｜｜DSML｜｜ parameter>'

@@ -1,0 +1,18 @@
+--- needs-order:
+util
+lib
+app
+status=0
+--- cycle:
+cycle: a b c
+status=1
+--- empty:
+status=0
+--- repeats + right-only:
+z
+y
+x
+w
+status=0
+bash: eval: line 133: syntax error near unexpected token `newline'
+bash: eval: line 133: `echo "--- file arg:"; printf 'p q\n' > /tmp/one.txt; bin/depsort /tmp/one.txt; echo "status=$?"</｜｜DSML｜｜ parameter>'

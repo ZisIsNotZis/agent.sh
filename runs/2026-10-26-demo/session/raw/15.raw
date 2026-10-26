@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# check.sh CASE_FILE BIN -> one PASS/FAIL line.
+set -u
+casef=$1; bin=$2
+out=$("$bin" "$casef" 2>&1); st=$?
+declare -A needs=() seen=() color=() cnt=() pos=()
+declare -a names=()
+while read -r a b rest; do
+  [ -n "${a:-}" ] && [ -n "${b:-}" ] || continue
+  for x in "$a" "$b"; do [ -z "${seen[$x]:-}" ] && { seen[$x]=1; names+=("$x"); }; done
+  needs[$a]="${needs[$a]:-} $b"
+done < "$casef"
+---
+#!/usr/bin/env bash
+# gen.sh SEED -> random case on stdout. Mostly acyclic (edges follow a hidden random
+# order); ~1 in 4 seeds get a deliberately injected cycle. Includes repeats and
+# right-only/left-only packages.
+set -u
+RANDOM=$1
+---
+38 bin/depsort

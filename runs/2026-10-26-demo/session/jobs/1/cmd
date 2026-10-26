@@ -1,0 +1,1 @@
+bash -c cd /home/z/vibe/agent.sh/runs/2026-10-26-demo/work && for s in $(seq 1 300); do ./gen.sh $s > logs/cases/case_$s.in; printf "case %03d %s\n" $s "$(./check.sh logs/cases/case_$s.in ./bin/depsort)"; done > logs/run300.log; echo RUN-DONE >> logs/run300.log

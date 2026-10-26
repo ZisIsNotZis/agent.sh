@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# depsort: reads "a b" lines ("a needs b") from FILE or stdin.
+# Prints one build order (dependencies first), one package per line.
+# On a cycle prints "cycle: <packages in the cycle>" and exits 1.
+set -u
+awk '
+  NF >= 2 {
+    a = $1; b = $2
+    if (!(a in seen)) { seen[a]; order[++n] = a }
+    if (!(b in seen)) { seen[b]; order[++n] = b }
+    k = b SUBSEP a                      # build b before a
+    if (!(k in dedup)) { dedup[k] = 1; adj[b] = adj[b] " " a; indeg[a]++ }
+    need[a] = need[a] " " b             # a needs b (for cycle extraction)
+  }
+  END {
+    for (i = 1; i <= n; i++) if (indeg[order[i]] + 0 == 0) q[++tail] = order[i]
+    head = 1; out = 0
+    while (head <= tail) {
+      u = q[head++]; res[++out] = u
+      m = split(adj[u], vs, " ")
+      for (j = 1; j <= m; j++) if (--indeg[vs[j]] == 0) q[++tail] = vs[j]
+    }
+    if (out == n) { for (i = 1; i <= n; i++) print res[i]; exit 0 }
+    # Cycle: walk needs-edges among unresolved nodes until one repeats.
+    for (i = 1; i <= n; i++) if (indeg[order[i]] > 0) { start = order[i]; break }
+    pos = 0; u = start
+    while (!(u in where)) {
+      where[u] = ++pos; path[pos] = u; nxt = ""
+      m = split(need[u], vs, " ")
+      for (j = 1; j <= m; j++) if (indeg[vs[j]] > 0) { nxt = vs[j]; break }
+      u = nxt
+    }
+    cyc = ""
+    for (i = where[u]; i <= pos; i++) cyc = cyc (cyc == "" ? "" : " ") path[i]
+    print "cycle: " cyc
+    exit 1
+  }
+' "${1:--}"
