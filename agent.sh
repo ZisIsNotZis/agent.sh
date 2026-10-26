@@ -394,6 +394,11 @@ turn() {               # request, block, trajectory, meter; 0 ok
   run_block "$reply" "$reply_note"; rc=$?
   ((rc == 0)) || lost
 
+  # a block with nothing to run is how the agent says it is finished: there is no tool to
+  # call to stop, so the empty command list is the stop, and a lone `#` line is the report
+  stop_now=0
+  if ! printf '%s\n' "$(unfence "$reply")" | grep -qvE '^[[:space:]]*(#|$)'; then stop_now=1; fi
+
   pt=$(jq -r '.usage.prompt_tokens // 0' "$res")
   hit=$(jq -r '.usage.prompt_cache_hit_tokens // 0' "$res")
   miss=$(jq -r '.usage.prompt_cache_miss_tokens // 0' "$res")
@@ -441,6 +446,10 @@ run_task() {
   [[ -n ${task-} ]] && printf '<|user|>\nUser: %s\n' "$task" >>"$traj"
   while ((turn_i < max_turns)); do
     turn || return 1
+    if ((stop_now)); then
+      printf 'agent.sh: the block held nothing to run, so the run ends here (turn %s)\n' "$turn_i" >&2
+      break
+    fi
     (($(pending) > 0)) && drain
     if ((compact_at > 0 && last_pt >= compact_at)); then compact; fi
   done

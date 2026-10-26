@@ -24,7 +24,9 @@ echo hello from turn one
 bgrun -n "the stub job" sh -c "sleep 0.2; echo from the stub job"' ;;
   2) reply='# turn two: the job has finished, so read what it wrote
 cat "$AGENT_SH_JOBS/1/log"' ;;
-  *) reply='# done' ;;
+  3|4|5) reply="# turn $n: a short block
+echo turn $n" ;;
+  *) reply='# done, and nothing left to run' ;;
 esac
 
 # the meter is deterministic and shaped like the real one: it grows by one appended pair,

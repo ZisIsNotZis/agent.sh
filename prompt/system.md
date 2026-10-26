@@ -42,4 +42,4 @@ If you are idle when a job finishes, it starts a turn of its own as a `Job:` mes
 - Keep blocks short. If a command may take minutes, `bgrun` it, do something else in the meantime, and `bgwait` when you have nothing better.
 - The shell is bash 5.1 with coreutils and `jq`; there is no Python and no network client you should rely on.
 - Do not probe the harness. You cannot see your own input format from inside, and a turn spent testing how the harness behaves is a turn not spent on the task. If you want to know something, print it.
-- When the task is done, say so in a `#` line. That line is your report.
+- **To finish, write a block that is only `#` lines.** A block with nothing to run ends the run, and that comment is how you report. Doing more turns than the task needs is not thoroughness: the run has a turn budget, and a finished task that keeps checking itself spends the budget the next task may need.

@@ -144,6 +144,13 @@ else
 fi
 hasin "$s2/traj.md" 'turn=2 prompt=6000 hit=5800' 'the resumed turn is turn two, and the cache shows'
 
+# the stop: a block with nothing to run ends the run instead of burning the turn budget
+s4=$work/stop
+bash agent.sh --task go --session "$s4" --stub "$wake_stub" --max-turns 10 >"$work/stop.out" 2>"$work/stop.err"
+hasin "$work/stop.err" 'the block held nothing to run, so the run ends here (turn 6)' \
+  'a comment-only block ends the run, at the turn it was written'
+hasin "$s4/traj.md" '# done, and nothing left to run' 'the ending comment is recorded like any block'
+
 # the request itself: turn two extends turn one's messages instead of changing them
 k=$(jq '.messages | length' "$s2/req.1.json")
 if jq -c --argjson k "$k" '.messages[0:$k]' "$s2/req.2.json" >"$work/m2" &&
