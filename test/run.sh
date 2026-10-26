@@ -93,6 +93,18 @@ hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending
 wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
 hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
 
+# a fenced block would run twice, because backticks are a command substitution: it is unfenced
+cat >"$work/fence.sh" <<'BLOCKS'
+```
+echo fenced
+```
+%%
+echo after
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/fence bash agent.sh --blocks "$work/fence.sh" >"$work/fence.out" 2>&1
+hasin "$work/fence.out" 'Bash: fenced' 'a fence around the whole block is stripped before it runs'
+hasntin "$work/fence.out" 'command not found' 'the fence did not become a command substitution'
+
 # the turn: a model in a file, so the loop, the meter and resume are all free to check
 wake_stub=test/stub-model.sh
 s1=$work/turn

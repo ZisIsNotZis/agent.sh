@@ -147,10 +147,25 @@ show() {               # sets body
   fi
 }
 
-run_block() {          # $1 body; prints the message and appends both sides to the trajectory
-  local rc
+# a markdown fence is a command substitution to bash: the block would run, and then run again
+# with its own output as the command. Strip one when the whole block is wrapped in one.
+unfence() {            # $1 body; prints the body to execute
+  local b=$1 first last
+  first=${b%%$'\n'*}
+  last=$(printf '%s\n' "$b" | awk 'NF { l = $0 } END { print l }')
+  if [[ $first =~ ^\`\`\`[A-Za-z0-9_+.-]*$ && $last == '```' ]]; then
+    printf '%s\n' "$b" | awk '{ line[NR] = $0 }
+      END { n = NR; while (n > 1 && line[n] ~ /^[[:space:]]*$/) n--
+            for (i = 1; i <= NR; i++) if (i != 1 && i != n) print line[i] }'
+  else
+    printf '%s' "$b"
+  fi
+}
+
+run_block() {          # $1 body, $2 a note to append after the status; prints, records
+  local rc note=${2-}
   n=$((n + 1))
-  exec_block "$1"; rc=$?
+  exec_block "$(unfence "$1")"; rc=$?
   case $rc in
     0) ;;
     70|71|72) return "$rc" ;;
@@ -159,9 +174,10 @@ run_block() {          # $1 body; prints the message and appends both sides to t
   show
   if [[ -n $body ]]; then msg=$(printf 'Bash: %s' "$body"); else msg='Bash:'; fi
   msg+=$(printf '\n[status %s]' "$st")
+  [[ -n $note ]] && msg+=$(printf '\n[%s]' "$note")
   printf '%s\n' "$msg"
   # the record keeps one newline between the block and the reply, whatever the block's tail
-  local rec=${1%$'\n'}; rec=${rec%$'\n'}
+  local rec; rec=$(unfence "$1"); rec=${rec%$'\n'}; rec=${rec%$'\n'}
   printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$rec" "$msg" >>"$traj"
   return 0
 }
@@ -338,7 +354,12 @@ turn() {               # request, block, trajectory, meter; 0 ok
   fi
   reply=$(jq -r '.choices[0].message.content // ""' "$res") || { printf 'agent.sh: turn %s: unreadable reply\n' "$turn_i" >&2; return 1; }
 
-  run_block "$reply"; rc=$?
+  # tool-call markup is not a thing here, and a model that emits it wastes a turn learning so
+  reply_note=''
+  if [[ $reply == *DSML* || $reply == *'invoke name='* ]]; then
+    reply_note='note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say'
+  fi
+  run_block "$reply" "$reply_note"; rc=$?
   ((rc == 0)) || lost
 
   pt=$(jq -r '.usage.prompt_tokens // 0' "$res")
