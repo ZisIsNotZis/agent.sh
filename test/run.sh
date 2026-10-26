@@ -151,6 +151,12 @@ hasin "$work/stop.err" 'the block held nothing to run, so the run ends here (tur
   'a comment-only block ends the run, at the turn it was written'
 hasin "$s4/traj.md" '# done, and nothing left to run' 'the ending comment is recorded like any block'
 
+# an empty reply is not a stop: it is a model saying nothing, and it is told so
+s5=$work/empty
+bash agent.sh --task go --session "$s5" --stub test/stub-empty.sh --max-turns 4 >"$work/empty.out" 2>&1
+hasin "$s5/traj.md" 'that reply was empty, so nothing ran' 'an empty reply is answered, not obeyed'
+hasin "$work/empty.out" 'the run ends here (turn 2)' 'the run goes on past an empty reply and stops at the comment'
+
 # the request itself: turn two extends turn one's messages instead of changing them
 k=$(jq '.messages | length' "$s2/req.1.json")
 if jq -c --argjson k "$k" '.messages[0:$k]' "$s2/req.2.json" >"$work/m2" &&

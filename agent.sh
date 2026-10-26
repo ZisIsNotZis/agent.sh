@@ -386,18 +386,21 @@ turn() {               # request, block, trajectory, meter; 0 ok
   fi
   reply=$(jq -r '.choices[0].message.content // ""' "$res") || { printf 'agent.sh: turn %s: unreadable reply\n' "$turn_i" >&2; return 1; }
 
-  # tool-call markup is not a thing here, and a model that emits it wastes a turn learning so
+  # what the reply is, before it runs: markup and silence are answered, and a block with
+  # nothing to run is how the agent says it is finished — there is no tool to call to stop,
+  # so the empty command list is the stop and a `#` line is the report.
+  reply_body=$(unfence "$reply")
   reply_note=''
+  stop_now=0
   if [[ $reply == *DSML* || $reply == *'invoke name='* ]]; then
     reply_note='note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say'
+  elif ! grep -qvE '^[[:space:]]*$' <<<"$reply_body"; then
+    reply_note='note: that reply was empty, so nothing ran. Write the bash block you mean to run'
+  elif grep -qE '^[[:space:]]*#' <<<"$reply_body" && ! grep -qvE '^[[:space:]]*(#|$)' <<<"$reply_body"; then
+    stop_now=1
   fi
   run_block "$reply" "$reply_note"; rc=$?
   ((rc == 0)) || lost
-
-  # a block with nothing to run is how the agent says it is finished: there is no tool to
-  # call to stop, so the empty command list is the stop, and a lone `#` line is the report
-  stop_now=0
-  if ! printf '%s\n' "$(unfence "$reply")" | grep -qvE '^[[:space:]]*(#|$)'; then stop_now=1; fi
 
   pt=$(jq -r '.usage.prompt_tokens // 0' "$res")
   hit=$(jq -r '.usage.prompt_cache_hit_tokens // 0' "$res")
