@@ -178,7 +178,8 @@ hasin "$s1/traj.md" '<|meter|> turn=1 prompt=2000' 'the trajectory carries a met
 hasin "$s1/traj.md" '<|meter|> turn=2' 'one meter line for each turn, in order'
 hasin "$work/turn.err" 'cumulative prompt 7000' 'the meter totals across the session'
 
-# resume: killed after one turn, continued, and the record only grew
+# resume: stopped after one turn (the run was not killed — that path is the timeout test),
+# continued, and the record only grew
 s2=$work/resume
 bash agent.sh --task 'go' --session "$s2" --stub "$wake_stub" --max-turns 1 >/dev/null 2>&1
 cp "$s2/traj.md" "$work/after-one.md"
@@ -186,7 +187,7 @@ bash agent.sh --session "$s2" --resume --stub "$wake_stub" --max-turns 2 >/dev/n
 if cmp -s -n "$(stat -c%s "$work/after-one.md")" "$work/after-one.md" "$s2/traj.md"; then
   printf 'ok   resume appends to the trajectory and never rewrites it\n'
 else
-  printf 'FAIL resume changed bytes the killed run had already written\n'; fail=1
+  printf 'FAIL resume changed bytes the first run had already written\n'; fail=1
 fi
 hasin "$s2/traj.md" 'turn=2 prompt=5000 hit=4800' 'the resumed turn is turn two, and the cache shows'
 
