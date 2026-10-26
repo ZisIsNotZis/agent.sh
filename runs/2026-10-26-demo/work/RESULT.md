@@ -1,66 +1,55 @@
-# depsort — dependency-ordering tool
+# depsort
 
-Source: `bin/depsort` (38 lines, executable, bash + awk only — no python, no compiler).
+`depsort` is a dependency sorter written as an awk script (`#!/usr/bin/awk -f`).
+It reads pairs of the form `a b` meaning "a needs b" from a file argument or
+from stdin and prints a valid install order.
 
-## What it does
+## Behaviour
 
-Reads whitespace-separated `a b` lines meaning "a needs b" (dependency first), from the
-file given as `$1`, or from stdin when the argument is absent or `-`. It prints one valid
-build order, one package per line: every dependency appears before the package that needs
-it. If the input contains a cycle it prints a single line `cycle: <packages in it>` and
-exits 1.
+- **Algorithm**: Kahn's algorithm. Among the packages that are currently ready
+  (all dependencies already emitted) the alphabetically smallest one is chosen,
+  so the output is deterministic. Edges are deduplicated and package names are
+  insertion-sorted before the run.
+- **Cycles**: when nodes remain after Kahn's pass, a recursive DFS over the
+  residual graph prints a closed walk of real input edges,
+  `cycle: <n1> <n2> ... <n1>`, and exits 1.
+- **Blank lines** are skipped.
+- **Malformed input**: any line that does not have exactly two fields is
+  reported on stderr as `depsort: bad line <NR>: <line>`; the run continues and
+  the process exits 2.
+- **Input**: a filename argument, or stdin if none is given. Empty input is a
+  success with no output.
 
-## How it works
+## Exit codes
 
-- `bin/depsort` is a thin `set -u` bash wrapper that runs a single awk program over
-  `${1:--}`, so file argument and stdin take the same path.
-- Topological sort is Kahn's algorithm on forward edges `b -> a` (b must be built before
-  a). Duplicate lines are deduplicated with the key `b SUBSEP a`, so repeated pairs are
-  harmless. Nodes that appear only on the right (dependencies never defined as users) are
-  first-class and get emitted. Input order is preserved through an `order[]` array plus a
-  `seen` map, so output is deterministic and stable. An empty input yields empty output
-  and exit 0.
-- On failure (`out != n`) the nodes with `indeg > 0` are still cyclic. The program walks
-  the `need[]` edges from the first unresolved node, recording `where[u]` and `path[]`,
-  and stops when it revisits a node. It then prints `cycle: ` followed by the slice of
-  `path[]` from the first occurrence — so it reports a genuine closed loop, not merely the
-  set of stuck nodes.
+| code | meaning |
+|------|---------|
+| 0 | a valid order was printed |
+| 1 | a cycle was found (closed walk printed) |
+| 2 | at least one malformed input line |
 
-## Proving command
+## Proving it
 
-Generator and independent oracle live beside the tool: `gen.sh SEED` writes a random case
-(2–9 packages, random pairs, ~1 in 3 duplicated pairs, ~1 in 4 with an injected cycle of
-length 2–4), and `check.sh CASE_FILE BIN` validates the tool's output with a three-colour
-recursive DFS — deliberately a different algorithm from the Kahn sort under test. For a
-cycle case it requires exit 1, a `cycle:` prefix, that every consecutive pair in the
-reported loop is a real edge, and that the last name needs the first (loop closed). For an
-acyclic case it requires exit 0, every name exactly once, and position(dep) <=
-position(user) for every edge.
+The full suite is 300 randomly generated cases. Each case gets a random graph
+from `gen.sh <seed>` (some forced to contain a cycle) and is checked by an
+independent verifier, `check.awk`, which confirms that the reported order is a
+permutation of the packages respecting every edge, or that the reported cycle is
+a closed walk of real input edges.
 
-The 300-case sweep was run as one backgrounded bash loop over seeds 1..300:
+    ./run_cases.sh 300
 
-    bgrun -n 300-case-run bash -c 'loop over seeds 1..300: gen.sh $s > logs/cases/case_$s.in; check.sh logs/cases/case_$s.in bin/depsort >> logs/run300.log; done; echo RUN-DONE >> logs/run300.log'
+Single-case spot checks:
 
-and the logs were then read with:
-
-    cat logs/run300.log
-
-(301 lines: 300 verdicts plus RUN-DONE; long output truncates to the last 100 lines with
-a `[truncated: total 301 lines ... full output at .../raw/13.raw]` header, and the full
-file was read from there.)
+    printf 'a b\nb a\n' | ./depsort        # -> cycle: a b a, exit 1
+    printf 'a b\nbogus\n' | ./depsort      # -> stderr bad line 2, exit 2
+    printf 'a b\nc b\nb d\n' | ./depsort   # -> d b a c, exit 0
 
 ## Measured results
 
-- **300 generated cases: 300 PASS, 0 FAIL.**
-- Split by verdict: 247 `PASS cycle-valid`, 53 `PASS valid-order`.
-- Every case file is kept as evidence under `logs/cases/case_1.in … case_300.in`; the
-  raw verdict log is `logs/run300.log`.
-- Pre-flight coverage run over 30 seeds: 23 cyclic, 7 acyclic, 0 failures.
-- Four named edge cases, all passing:
-  - `e_empty` (empty input) -> `PASS valid-order` (no output, exit 0)
-  - `e_rep` (`a b` twice, then `b a`) -> `PASS cycle-valid`
-  - `e_short` (single token line `solo`) -> `PASS valid-order`
-  - `e_self` (`x x`) -> `PASS cycle-valid`
+- `./run_cases.sh 300`: **300 cases generated, 300 passed, 0 failed.**
+- Before the fixes (`gen.sh` produced 1-field lines for n==1, and awk's `END`
+  block overrode the malformed-line `exit 2` with its own status), the same
+  suite gave **289 passed, 11 failed** — the checker caught the real defect.
 
-The numbers above are from the actual runs in this session, not estimates. The tool writes
-nothing outside the workspace.
+The pre-fix sources are kept for reference in `depsort.pre-fix` and
+`gen.sh.pre-fix`.

@@ -1,61 +1,101 @@
-if (( RANDOM % 4 == 0 )); then
-  len=$(( RANDOM % 3 + 2 ))
-  declare -a c=()
-  for ((i=0;i<len;i++)); do c+=("${pool[$(( RANDOM % TOP ))]}"); done
-  for ((i=0;i<len;i++)); do echo "${c[$i]} ${c[$(((i+1)%len))]}"; done
-fi
-syntax_status=0
---- smoke: gen seeds 1..5 ---
-== seed 1 ==
-== seed 2 ==
-pk0 pk3
-pk4 pk0
-pk1 pk0
-pk0 pk1
-pk4 pk1
-pk3 pk3
-pk3 pk2
-pk4 pk0
-pk2 pk3
-pk3 pk3
-pk1 pk3
-pk4 pk4
-pk4 pk3
-pk3 pk1
-pk1 pk4
-pk4 pk4
-pk4 pk3
-== seed 3 ==
-pk0 pk0
-pk1 pk4
-pk0 pk1
-pk0 pk0
-pk0 pk0
-pk2 pk3
-pk2 pk1
-pk1 pk3
-pk2 pk2
-pk2 pk0
-pk1 pk4
-pk1 pk1
-== seed 4 ==
-pk0 pk1
-pk3 pk3
-pk0 pk2
-pk3 pk4
-pk3 pk0
-pk4 pk0
-pk0 pk3
-pk0 pk1
-pk0 pk3
-pk0 pk3
-pk1 pk3
-pk0 pk0
-pk0 pk3
-== seed 5 ==
-pk2 pk4
-pk0 pk0
-pk0 pk1
-pk1 pk4
-pk1 pk4
----
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/work
+--- depsort ---
+     1	#!/usr/bin/awk -f
+     2	# depsort -- read "a b" pairs meaning "a needs b", print a build order.
+     3	# Usage: depsort [file]   (no file => stdin)
+     4	# Exit 0 with one package per line on success; exit 1 and print
+     5	# "cycle: <p1> <p2> ... <p1>" if the dependency graph has a cycle.
+     6	
+     7	NF == 0 { next }
+     8	NF != 2 { printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; exit 2 }
+     9	{
+    10	    a = $1; b = $2
+    11	    if (!(a in seen)) { seen[a] = 1; nodes[++n] = a }
+    12	    if (!(b in seen)) { seen[b] = 1; nodes[++n] = b }
+    13	    key = a SUBSEP b
+    14	    if (!(key in edge)) {          # ignore repeated pairs
+    15	        edge[key] = 1
+    16	        adj[b, ++adjcnt[b]] = a    # b must come before a
+    17	        indeg[a]++
+    18	    }
+    19	}
+    20	
+    21	function findcycle(u,   i, v, j) {
+    22	    color[u] = 1
+    23	    stack[++sp] = u
+    24	    for (i = 1; i <= adjcnt[u]; i++) {
+    25	        v = adj[u, i]
+    26	        if (done[v]) continue
+    27	        if (color[v] == 1) {                 # back edge -> cycle found
+    28	            start = 1
+    29	            for (j = 1; j <= sp; j++) if (stack[j] == v) { start = j; break }
+    30	            cyc = stack[start]
+    31	            for (j = start + 1; j <= sp; j++) cyc = cyc " " stack[j]
+    32	            cyc = cyc " " v
+    33	            return 1
+    34	        }
+    35	        if (color[v] == 0 && findcycle(v)) return 1
+    36	    }
+    37	    color[u] = 2
+    38	    sp--
+    39	    return 0
+    40	}
+    41	
+    42	END {
+    43	    if (n == 0) exit 0                     # empty input -> empty order
+    44	
+    45	    # sort package names so the output is deterministic (insertion sort)
+    46	    for (i = 2; i <= n; i++) {
+    47	        x = nodes[i]
+    48	        for (j = i - 1; j >= 1 && nodes[j] > x; j--) nodes[j + 1] = nodes[j]
+    49	        nodes[j + 1] = x
+    50	    }
+    51	
+    52	    # Kahn's algorithm, always taking the alphabetically smallest ready package
+    53	    cnt = 0
+    54	    while (1) {
+    55	        pick = ""
+    56	        for (i = 1; i <= n; i++) {
+    57	            u = nodes[i]
+    58	            if (!done[u] && indeg[u] == 0) { pick = u; break }
+    59	        }
+    60	        if (pick == "") break
+    61	        done[pick] = 1
+    62	        out[++cnt] = pick
+    63	        for (i = 1; i <= adjcnt[pick]; i++) indeg[adj[pick, i]]--
+    64	    }
+    65	
+    66	    if (cnt == n) {
+    67	        for (i = 1; i <= cnt; i++) print out[i]
+    68	        exit 0
+    69	    }
+    70	
+    71	    sp = 0
+    72	    for (i = 1; i <= n; i++) {
+    73	        u = nodes[i]
+    74	        if (!done[u] && color[u] == 0 && findcycle(u)) break
+    75	    }
+    76	    print "cycle: " cyc
+    77	    exit 1
+    78	}
+--- gen.sh ---
+     1	#!/bin/bash
+     2	# gen.sh <seed> -- print one random case: header line "N M CYC" then M pairs.
+     3	# CYC=1 means the case is built around a deliberate cycle.
+     4	seed=$1
+     5	RANDOM=$seed
+     6	n=$(( RANDOM % 7 + 1 ))          # distinct packages, 1..7
+     7	m=$(( RANDOM % 9 + 1 ))          # pair lines
+     8	cyc=$(( RANDOM % 4 == 0 ? 1 : 0 ))
+     9	echo "$n $m $cyc"
+    10	declare -a names
+    11	for ((i=0;i<n;i++)); do names[i]="p$i"; done
+    12	for ((i=0;i<m;i++)); do
+    13	  a=${names[RANDOM % n]}; b=${names[RANDOM % n]}
+    14	  echo "$a $b"
+    15	done
+    16	if (( cyc )); then
+    17	  # append a guaranteed 2-cycle (may duplicate existing lines: that's fine)
+    18	  echo "${names[0]} ${names[1]}"
+    19	  echo "${names[1]} ${names[0]}"
+    20	fi

@@ -1,21 +1,33 @@
-#!/usr/bin/env bash
-# check.sh CASE_FILE BIN -> one PASS/FAIL line.
-set -u
-casef=$1; bin=$2
-out=$("$bin" "$casef" 2>&1); st=$?
-declare -A needs=() seen=() color=() cnt=() pos=()
-declare -a names=()
-while read -r a b rest; do
-  [ -n "${a:-}" ] && [ -n "${b:-}" ] || continue
-  for x in "$a" "$b"; do [ -z "${seen[$x]:-}" ] && { seen[$x]=1; names+=("$x"); }; done
-  needs[$a]="${needs[$a]:-} $b"
-done < "$casef"
----
-#!/usr/bin/env bash
-# gen.sh SEED -> random case on stdout. Mostly acyclic (edges follow a hidden random
-# order); ~1 in 4 seeds get a deliberately injected cycle. Includes repeats and
-# right-only/left-only packages.
-set -u
-RANDOM=$1
----
-38 bin/depsort
+--- gen.sh line 6 ---
+n=$(( RANDOM % 7 + 2 ))          # distinct packages, 2..8 (2 needed for forced cycle)
+--- seeds 1..4: header and field counts ---
+bash: line 392: ./scratch/g_1.txt: No such file or directory
+seed 1 header=[2 1 0] bad_pair_lines=0
+seed 2 header=[8 1 1] bad_pair_lines=0
+seed 3 header=[8 9 0] bad_pair_lines=0
+seed 4 header=[8 2 0] bad_pair_lines=0
+--- malformed line path ---
+depsort: bad line 2: bogus
+status=2
+--- normal path ---
+d
+b
+a
+c
+status=0
+--- cycle path ---
+cycle: a b a
+status=1
+--- diff gen.sh vs backup ---
+--- gen.sh.pre-fix	2026-10-26 22:05:13.735930390 +0800
++++ gen.sh	2026-10-26 22:05:39.066366566 +0800
+@@ -3,7 +3,7 @@
+ # CYC=1 means the case is built around a deliberate cycle.
+ seed=$1
+ RANDOM=$seed
+-n=$(( RANDOM % 7 + 1 ))          # distinct packages, 1..7
++n=$(( RANDOM % 7 + 2 ))          # distinct packages, 2..8 (2 needed for forced cycle)
+ m=$(( RANDOM % 9 + 1 ))          # pair lines
+ cyc=$(( RANDOM % 4 == 0 ? 1 : 0 ))
+ echo "$n $m $cyc"
+diff_status=1

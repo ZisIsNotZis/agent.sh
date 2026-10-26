@@ -1,10 +1,1 @@
-seed 1  PASS cycle-reported
-seed 2  PASS cycle-reported
-seed 3  PASS cycle-reported
-seed 4  PASS cycle-reported
-seed 5  PASS cycle-reported
-seed 6  PASS valid-order
-seed 7  PASS cycle-reported
-seed 8  PASS cycle-reported
-bash: eval: line 324: syntax error near unexpected token `newline'
-bash: eval: line 324: `</｜｜DSML｜｜ parameter>'
+job 1 started, pid 2911130, log /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/1/log

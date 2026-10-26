@@ -1,1 +1,2 @@
-job 1 exited 0 — note: 300-case-run
+-rwxrwx--- 1 z z 2256 Oct 26 22:05 depsort.pre-fix
+-rwxrwx--- 1 z z  647 Oct 26 22:05 gen.sh.pre-fix

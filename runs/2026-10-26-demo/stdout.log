@@ -1,490 +1,527 @@
 Bash: /home/z/vibe/agent.sh/runs/2026-10-26-demo/work
-total 0
-drwxrwx--- 1 z z   0 Oct 26 21:43 .
-drwxrwx--- 1 z z 118 Oct 26 21:43 ..
-GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
 GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
-app
-lib
-util
+GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
+d
+b
+a
+c
 status=0
-cycle: a b c
+cycle: a b a
 status=1
 empty status=0
-bash: eval: line 98: syntax error near unexpected token `newline'
-bash: eval: line 98: `printf 'x y\nx y\ny z\n' | bin/depsort; echo "dup status=$?"</｜｜DSML｜｜ parameter>'
-[status 2]
-[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: --- needs-order:
-util
-lib
-app
-status=0
---- cycle:
-cycle: a b c
-status=1
---- empty:
-status=0
---- repeats + right-only:
-z
-y
+b
+a
 x
-w
-status=0
-bash: eval: line 133: syntax error near unexpected token `newline'
-bash: eval: line 133: `echo "--- file arg:"; printf 'p q\n' > /tmp/one.txt; bin/depsort /tmp/one.txt; echo "status=$?"</｜｜DSML｜｜ parameter>'
+dup status=0
+bash: eval: line 188: syntax error near unexpected token `newline'
+bash: eval: line 188: `printf 'a b\nb c\nc a\nd e\n' | ./depsort; echo "cycle status=$?"</｜｜DSML｜｜ parameter>'
 [status 2]
 [note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: q
+Bash: Usage: awk [POSIX or GNU style options] -f progfile [--] file ...
+Usage: awk [POSIX or GNU style options] [--] 'program' file ...
+POSIX options:		GNU long options: (standard)
+	-f progfile		--file=progfile
+	-F fs			--field-separator=fs
+	-v var=val		--assign=var=val
+Short options:		GNU long options: (extensions)
+	-b			--characters-as-bytes
+	-c			--traditional
+	-C			--copyright
+	-d[file]		--dump-variables[=file]
+	-D[file]		--debug[=file]
+	-e 'program-text'	--source='program-text'
+	-E file			--exec=file
+	-g			--gen-pot
+	-h			--help
+	-i includefile		--include=includefile
+	-I			--trace
+	-l library		--load=library
+	-L[fatal|invalid|no-ext]	--lint[=fatal|invalid|no-ext]
+	-M			--bignum
+	-N			--use-lc-numeric
+	-n			--non-decimal-data
+	-o[file]		--pretty-print[=file]
+	-O			--optimize
+	-p[file]		--profile[=file]
+	-P			--posix
+	-r			--re-interval
+	-s			--no-optimize
+	-S			--sandbox
+	-t			--lint-old
+	-V			--version
+
+To report bugs, use the `gawkbug' program.
+For full instructions, see the node `Bugs' in `gawk.info'
+which is section `Reporting Problems and Bugs' in the
+printed version.  This same information may be found at
+https://www.gnu.org/software/gawk/manual/html_node/Bugs.html.
+PLEASE do NOT try to report bugs by posting in comp.lang.awk,
+or by using a web forum such as Stack Overflow.
+
+gawk is a pattern scanning and processing language.
+By default it reads standard input and writes standard output.
+
+Examples:
+	awk '{ sum += $1 }; END { print sum }' file
+	awk -F: '{ print $1 }' /etc/passwd
+cycle: a c b a
+cycle3 status=1
+cycle: a a
+selfloop status=1
+q
 p
+single status=0
+d
+b
+a
+c
+e
+4 2 0
+p2 p1
+p2 p2
+---
+bash: eval: line 170: syntax error near unexpected token `newline'
+bash: eval: line 170: `./gen.sh 8</｜｜DSML｜｜ parameter>'
+[status 2]
+[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
+Bash: good order -> [edge a->b violated (b=2, a=1)]
+reversed order -> []
+fake cycle -> [cycle uses edge that does not exist: b a]
+bash: eval: line 355: syntax error near unexpected token `newline'
+bash: eval: line 355: `diff <(./depsort /tmp/t1.txt) <(./depsort < /tmp/t1.txt) && echo "stdin==file OK"</｜｜DSML｜｜ parameter>'
+[status 2]
+[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
+Bash: depsort on a b / b c:
+c
+b
+a
+real output -> []
+depsort cycle:
+cycle: a c b a
+real cycle -> []
+a b
+b c
+c a
+d e
+stdin==file OK
+bash: eval: line 279: syntax error near unexpected token `newline'
+bash: eval: line 279: `bgrun -n "300-case depsort run" ./run_cases.sh 300</｜｜DSML｜｜ parameter>'
+[status 2]
+[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
+Bash: job 1 started, pid 2911130, log /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/1/log
+[status 0]
+Job: job 1 exited 1 — note: 300-case depsort run
+Bash: 289
+FAIL case  75  seed-header[1 2 1] status=1 :: malformed pair line 3
+FAIL case  94  seed-header[1 4 1] status=1 :: malformed pair line 5
+FAIL case 150  seed-header[1 4 1] status=1 :: malformed pair line 5
+FAIL case 160  seed-header[1 9 1] status=1 :: malformed pair line 10
+FAIL case 177  seed-header[1 9 1] status=1 :: malformed pair line 10
+PASS case 300  seed-header[7 8 1] status=1 lines=1
+
+TOTAL 300  PASS 289  FAIL 11
+=== case 75 input ===
+p0 p0
+p0 p0
+p0 
+ p0
+=== depsort output ===
+cycle: p0 p0
+status was recorded in log
+depsort: bad line 3: p0 
+rerun status=1
+bash: eval: line 302: syntax error near unexpected token `newline'
+bash: eval: line 302: `bgwait</｜｜DSML｜｜ parameter>'
+[status 2]
+[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
+Bash: bash: eval: line 300: syntax error near unexpected token `newline'
+bash: eval: line 300: `<｜｜DSML｜｜ calls>'
+[status 2]
+[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
+Bash: [truncated: total 101 lines, showing last 100; full output at /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/raw/9.raw]
+--- depsort ---
+     1	#!/usr/bin/awk -f
+     2	# depsort -- read "a b" pairs meaning "a needs b", print a build order.
+     3	# Usage: depsort [file]   (no file => stdin)
+     4	# Exit 0 with one package per line on success; exit 1 and print
+     5	# "cycle: <p1> <p2> ... <p1>" if the dependency graph has a cycle.
+     6	
+     7	NF == 0 { next }
+     8	NF != 2 { printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; exit 2 }
+     9	{
+    10	    a = $1; b = $2
+    11	    if (!(a in seen)) { seen[a] = 1; nodes[++n] = a }
+    12	    if (!(b in seen)) { seen[b] = 1; nodes[++n] = b }
+    13	    key = a SUBSEP b
+    14	    if (!(key in edge)) {          # ignore repeated pairs
+    15	        edge[key] = 1
+    16	        adj[b, ++adjcnt[b]] = a    # b must come before a
+    17	        indeg[a]++
+    18	    }
+    19	}
+    20	
+    21	function findcycle(u,   i, v, j) {
+    22	    color[u] = 1
+    23	    stack[++sp] = u
+    24	    for (i = 1; i <= adjcnt[u]; i++) {
+    25	        v = adj[u, i]
+    26	        if (done[v]) continue
+    27	        if (color[v] == 1) {                 # back edge -> cycle found
+    28	            start = 1
+    29	            for (j = 1; j <= sp; j++) if (stack[j] == v) { start = j; break }
+    30	            cyc = stack[start]
+    31	            for (j = start + 1; j <= sp; j++) cyc = cyc " " stack[j]
+    32	            cyc = cyc " " v
+    33	            return 1
+    34	        }
+    35	        if (color[v] == 0 && findcycle(v)) return 1
+    36	    }
+    37	    color[u] = 2
+    38	    sp--
+    39	    return 0
+    40	}
+    41	
+    42	END {
+    43	    if (n == 0) exit 0                     # empty input -> empty order
+    44	
+    45	    # sort package names so the output is deterministic (insertion sort)
+    46	    for (i = 2; i <= n; i++) {
+    47	        x = nodes[i]
+    48	        for (j = i - 1; j >= 1 && nodes[j] > x; j--) nodes[j + 1] = nodes[j]
+    49	        nodes[j + 1] = x
+    50	    }
+    51	
+    52	    # Kahn's algorithm, always taking the alphabetically smallest ready package
+    53	    cnt = 0
+    54	    while (1) {
+    55	        pick = ""
+    56	        for (i = 1; i <= n; i++) {
+    57	            u = nodes[i]
+    58	            if (!done[u] && indeg[u] == 0) { pick = u; break }
+    59	        }
+    60	        if (pick == "") break
+    61	        done[pick] = 1
+    62	        out[++cnt] = pick
+    63	        for (i = 1; i <= adjcnt[pick]; i++) indeg[adj[pick, i]]--
+    64	    }
+    65	
+    66	    if (cnt == n) {
+    67	        for (i = 1; i <= cnt; i++) print out[i]
+    68	        exit 0
+    69	    }
+    70	
+    71	    sp = 0
+    72	    for (i = 1; i <= n; i++) {
+    73	        u = nodes[i]
+    74	        if (!done[u] && color[u] == 0 && findcycle(u)) break
+    75	    }
+    76	    print "cycle: " cyc
+    77	    exit 1
+    78	}
+--- gen.sh ---
+     1	#!/bin/bash
+     2	# gen.sh <seed> -- print one random case: header line "N M CYC" then M pairs.
+     3	# CYC=1 means the case is built around a deliberate cycle.
+     4	seed=$1
+     5	RANDOM=$seed
+     6	n=$(( RANDOM % 7 + 1 ))          # distinct packages, 1..7
+     7	m=$(( RANDOM % 9 + 1 ))          # pair lines
+     8	cyc=$(( RANDOM % 4 == 0 ? 1 : 0 ))
+     9	echo "$n $m $cyc"
+    10	declare -a names
+    11	for ((i=0;i<n;i++)); do names[i]="p$i"; done
+    12	for ((i=0;i<m;i++)); do
+    13	  a=${names[RANDOM % n]}; b=${names[RANDOM % n]}
+    14	  echo "$a $b"
+    15	done
+    16	if (( cyc )); then
+    17	  # append a guaranteed 2-cycle (may duplicate existing lines: that's fine)
+    18	  echo "${names[0]} ${names[1]}"
+    19	  echo "${names[1]} ${names[0]}"
+    20	fi
+[status 0]
+Bash: bash: eval: line 321: syntax error near unexpected token `newline'
+bash: eval: line 321: `echo '=== diff depsort ===' && diff -u depsort.pre-fix depsort; echo '=== diff gen.sh ===' && diff -u gen.sh.pre-fix gen.sh; echo '=== head of END ===' && sed -n '7,10p;42,46p' depsort && sed -n '6p' gen.sh</parameter>'
+[status 2]
+Bash: bash: eval: line 323: syntax error near unexpected token `newline'
+bash: eval: line 323: `cd /home/z/vibe/agent.sh/runs/2026-10-26-demo/work && cp depsort depsort.pre-fix && cp gen.sh gen.sh.pre-fix && sed -i 's|^NF != 2 { printf "depsort: bad line %d: %s\\n", NR, $0 > "/dev/stderr"; exit 2 }$|NF != 2 { err = 1; printf "depsort: bad line %d: %s\\n", NR, $0 > "/dev/stderr"; next }|' depsort && sed -i 's|^END {$|END {\n    if (err) exit 2                       # malformed input wins over any graph walk|' depsort && sed -i 's|n=$(( RANDOM % 7 + 1 ))          # distinct packages, 1..7|n=$(( RANDOM % 7 + 2 ))          # distinct packages, 2..8 (2 needed for forced cycle)|' gen.sh && echo '=== diff depsort ===' && diff -u depsort.pre-fix depsort; echo '=== diff gen.sh ===' && diff -u gen.sh.pre-fix gen.sh; echo '=== depsort lines ===' && sed -n '7,10p' depsort && sed -n '42,46p' depsort && echo '=== gen.sh line 6 ===' && sed -n '6p' gen.sh</parameter>'
+[status 2]
+Bash: -rwxrwx--- 1 z z 2256 Oct 26 22:05 depsort.pre-fix
+-rwxrwx--- 1 z z  647 Oct 26 22:05 gen.sh.pre-fix
+[status 0]
+Bash: NF == 0 { next }
+NF != 2 { printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; err = 1; printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; next }
+{
+[status 0]
+Bash: === lines 7-10 ===
+NF == 0 { next }
+NF != 2 { err = 1; printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; next }
+{
+    a = $1; b = $2
+=== END head ===
+END {
+    if (err) exit 2
+    if (n == 0) exit 0                     # empty input -> empty order
+
+    # sort package names so the output is deterministic (insertion sort)
+    for (i = 2; i <= n; i++) {
+[status 0]
+Bash: --- gen.sh line 6 ---
+n=$(( RANDOM % 7 + 2 ))          # distinct packages, 2..8 (2 needed for forced cycle)
+--- seeds 1..4: header and field counts ---
+bash: line 392: ./scratch/g_1.txt: No such file or directory
+seed 1 header=[2 1 0] bad_pair_lines=0
+seed 2 header=[8 1 1] bad_pair_lines=0
+seed 3 header=[8 9 0] bad_pair_lines=0
+seed 4 header=[8 2 0] bad_pair_lines=0
+--- malformed line path ---
+depsort: bad line 2: bogus
+status=2
+--- normal path ---
+d
+b
+a
+c
 status=0
-bash: eval: line 260: syntax error near unexpected token `parameter'
-bash: eval: line 260: `for s in 1 2 3; do ./gen.sh $s > c$s.in; echo "seed $s: $(./check.sh c$s.in $PWD/bin/depsort)"; done</｜｜DSML｜｜ parameter>'
-[status 2]
-[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: total 12
-drwxrwx--- 1 z z   64 Oct 26 21:44 .
-drwxrwx--- 1 z z  118 Oct 26 21:43 ..
-drwxrwx--- 1 z z   14 Oct 26 21:44 bin
--rwxrwx--- 1 z z 1835 Oct 26 21:44 check.sh
--rw-rw---- 1 z z    4 Oct 26 21:44 filearg.txt
--rwxrwx--- 1 z z  743 Oct 26 21:44 gen.sh
-drwxrwx--- 1 z z    0 Oct 26 21:44 logs
-  27 bin/depsort
-  20 gen.sh
-  48 check.sh
-  95 total
-  for ((i=0;i<len;i++)); do cyc+=("pk$(( RANDOM % 12 ))"); done
-  for ((i=0;i<len;i++)); do echo "${cyc[$i]} ${cyc[$(((i+1)%len))]}"; done
-fi
-bash: eval: line 197: syntax error near unexpected token `newline'
-bash: eval: line 197: `</｜｜DSML｜｜ parameter>'
-[status 2]
-[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: seed 1  PASS cycle-reported
-seed 2  PASS cycle-reported
-seed 3  PASS cycle-reported
-seed 4  PASS cycle-reported
-seed 5  PASS cycle-reported
-seed 6  PASS valid-order
-seed 7  PASS cycle-reported
-seed 8  PASS cycle-reported
-bash: eval: line 324: syntax error near unexpected token `newline'
-bash: eval: line 324: `</｜｜DSML｜｜ parameter>'
-[status 2]
-[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: == cycle a->b->a plus downstream c needs a:
-cycle: a b
+--- cycle path ---
+cycle: a b a
 status=1
-== simple chain:
-util
-lib
-app
-status=0
-bash: eval: line 363: syntax error near unexpected token `newline'
-bash: eval: line 363: `</｜｜DSML｜｜ parameter>'
-[status 2]
-[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: ./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 1  PASS valid-order
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 2  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 3  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 4  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 5  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 6  PASS valid-order
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 7  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 8  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 9  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 10 PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 11 PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 12 PASS cycle-valid
-empty:          PASS valid-order
-repeats:        PASS valid-order
-one-token line: PASS valid-order
-self-loop:      PASS cycle-valid
-bash: eval: line 539: syntax error near unexpected token `newline'
-bash: eval: line 539: `</｜｜DSML｜｜ parameter>'
-[status 2]
-[note: that is tool-call markup and there are no tools. Your whole reply is bash: write commands, and use # for what you want to say]
-Bash: total 48
-drwxrwx--- 1 z z  216 Oct 26 21:44 .
-drwxrwx--- 1 z z  118 Oct 26 21:43 ..
-drwxrwx--- 1 z z   14 Oct 26 21:44 bin
--rw-rw---- 1 z z    8 Oct 26 21:44 c.in
--rw-rw---- 1 z z    8 Oct 26 21:44 case_1.in
--rw-rw---- 1 z z   90 Oct 26 21:44 case_2.in
--rw-rw---- 1 z z   98 Oct 26 21:44 case_3.in
--rw-rw---- 1 z z  100 Oct 26 21:44 case_4.in
--rw-rw---- 1 z z   46 Oct 26 21:44 case_5.in
--rw-rw---- 1 z z   18 Oct 26 21:44 case_6.in
--rw-rw---- 1 z z   50 Oct 26 21:44 case_7.in
--rw-rw---- 1 z z   24 Oct 26 21:44 case_8.in
--rwxrwx--- 1 z z 2100 Oct 26 21:44 check.sh
--rw-rw---- 1 z z    4 Oct 26 21:44 filearg.txt
--rwxrwx--- 1 z z 1297 Oct 26 21:44 gen.sh
-drwxrwx--- 1 z z    0 Oct 26 21:44 logs
---- /tmp/one.txt ---
-absent
---- gen.sh before ---
-     1	#!/usr/bin/env bash
-     2	# gen.sh SEED -> random case on stdout. Mostly acyclic (edges follow a hidden random
-     3	# order); ~1 in 4 seeds get a deliberately injected cycle. Includes repeats and
-     4	# right-only/left-only packages.
-     5	set -u
-     6	RANDOM=$1
-     7	n=$(( RANDOM % 8 + 2 ))                       # 2..9 packages
-     8	TOP=5                                          # packages live in a window of 5 names
-     9	declare -a ord=()
-    10	# hidden order: shuffled list of distinct names
-    11	declare -a pool=()
-    12	for ((i=0;i<TOP;i++)); do pool+=("pk$i"); done
-    13	for ((i=TOP-1;i>0;i--)); do j=$(( RANDOM % (i+1) )); t=${pool[$i]}; pool[$i]=${pool[$j]}; pool[$j]=$t; done
-    14	for ((i=0;i<n;i++)); do ord+=("${pool[$((i % TOP))]}"); done
-    15	m=$(( RANDOM % (n*2) ))
-    16	for ((k=0;k<m;k++)); do
-    17	  a=${ord[$((RANDOM % n))]}; b=${ord[$((RANDOM % n))]}
-    18	  echo "$a $b"                                 # may be forwards (needs) or backwards
-    19	done
-    20	# repeats of an earlier line, sometimes
-    21	if [ -s /dev/stdin ] || true; then :; fi
-    22	if (( RANDOM % 3 == 0 )); then
-    23	  a=${ord[$((RANDOM % n))]}; b=${ord[$((RANDOM % n))]}
-    24	  echo "$a $b"; echo "$a $b"
-    25	fi
-    26	if (( RANDOM % 4 == 0 )); then
-    27	  len=$(( RANDOM % 3 + 2 ))
-    28	  declare -ac=()
-    29	  for ((i=0;i<len;i++)); do c+=("${pool[$(( RANDOM % TOP ))]}"); done
-    30	  for ((i=0;i<len;i++)); do echo "${c[$i]} ${c[$(((i+1)%len))]}"; done
-    31	fi
---- patching ---
---- gen.sh after ---
-     1	#!/usr/bin/env bash
-     2	# gen.sh SEED -> random case on stdout. Mostly acyclic (edges follow a hidden random
-     3	# order); ~1 in 4 seeds get a deliberately injected cycle. Includes repeats and
-     4	# right-only/left-only packages.
-     5	set -u
-     6	RANDOM=$1
-     7	n=$(( RANDOM % 8 + 2 ))                       # 2..9 packages
-     8	TOP=5                                          # packages live in a window of 5 names
-     9	declare -a ord=()
-    10	# hidden order: shuffled list of distinct names
-    11	declare -a pool=()
-    12	for ((i=0;i<TOP;i++)); do pool+=("pk$i"); done
-    13	for ((i=TOP-1;i>0;i--)); do j=$(( RANDOM % (i+1) )); t=${pool[$i]}; pool[$i]=${pool[$j]}; pool[$j]=$t; done
-    14	for ((i=0;i<n;i++)); do ord+=("${pool[$((i % TOP))]}"); done
-    15	m=$(( RANDOM % (n*2) ))
-    16	for ((k=0;k<m;k++)); do
-    17	  a=${ord[$((RANDOM % n))]}; b=${ord[$((RANDOM % n))]}
-    18	  echo "$a $b"                                 # may be forwards (needs) or backwards
-    19	done
-    20	# repeats of an earlier line, sometimes
-    21	if (( RANDOM % 3 == 0 )); then
-    22	  a=${ord[$((RANDOM % n))]}; b=${ord[$((RANDOM % n))]}
-    23	  echo "$a $b"; echo "$a $b"
-    24	fi
-    25	if (( RANDOM % 4 == 0 )); then
-    26	  len=$(( RANDOM % 3 + 2 ))
-    27	  declare -ac=()
-    28	  for ((i=0;i<len;i++)); do c+=("${pool[$(( RANDOM % TOP ))]}"); done
-    29	  for ((i=0;i<len;i++)); do echo "${c[$i]} ${c[$(((i+1)%len))]}"; done
-    30	fi
-gen.sh: line 27: syntax error near unexpected token `('
-gen.sh: line 27: `  declare -ac=()'
-syntax_status=2
----
+--- diff gen.sh vs backup ---
+--- gen.sh.pre-fix	2026-10-26 22:05:13.735930390 +0800
++++ gen.sh	2026-10-26 22:05:39.066366566 +0800
+@@ -3,7 +3,7 @@
+ # CYC=1 means the case is built around a deliberate cycle.
+ seed=$1
+ RANDOM=$seed
+-n=$(( RANDOM % 7 + 1 ))          # distinct packages, 1..7
++n=$(( RANDOM % 7 + 2 ))          # distinct packages, 2..8 (2 needed for forced cycle)
+ m=$(( RANDOM % 9 + 1 ))          # pair lines
+ cyc=$(( RANDOM % 4 == 0 ? 1 : 0 ))
+ echo "$n $m $cyc"
+diff_status=1
 [status 0]
-Bash: if (( RANDOM % 4 == 0 )); then
-  len=$(( RANDOM % 3 + 2 ))
-  declare -a c=()
-  for ((i=0;i<len;i++)); do c+=("${pool[$(( RANDOM % TOP ))]}"); done
-  for ((i=0;i<len;i++)); do echo "${c[$i]} ${c[$(((i+1)%len))]}"; done
-fi
-syntax_status=0
---- smoke: gen seeds 1..5 ---
-== seed 1 ==
-== seed 2 ==
-pk0 pk3
-pk4 pk0
-pk1 pk0
-pk0 pk1
-pk4 pk1
-pk3 pk3
-pk3 pk2
-pk4 pk0
-pk2 pk3
-pk3 pk3
-pk1 pk3
-pk4 pk4
-pk4 pk3
-pk3 pk1
-pk1 pk4
-pk4 pk4
-pk4 pk3
-== seed 3 ==
-pk0 pk0
-pk1 pk4
-pk0 pk1
-pk0 pk0
-pk0 pk0
-pk2 pk3
-pk2 pk1
-pk1 pk3
-pk2 pk2
-pk2 pk0
-pk1 pk4
-pk1 pk1
-== seed 4 ==
-pk0 pk1
-pk3 pk3
-pk0 pk2
-pk3 pk4
-pk3 pk0
-pk4 pk0
-pk0 pk3
-pk0 pk1
-pk0 pk3
-pk0 pk3
-pk1 pk3
-pk0 pk0
-pk0 pk3
-== seed 5 ==
-pk2 pk4
-pk0 pk0
-pk0 pk1
-pk1 pk4
-pk1 pk4
----
+Bash: job 2 started, pid 2914728, log /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/2/log
 [status 0]
-Bash: coverage over 30 seeds: cycle=23 order=7 fail=0
---- edge cases ---
-e_empty: PASS valid-order
-e_rep: PASS cycle-valid
-e_short: PASS valid-order
-e_self: PASS cycle-valid
---- depsort source ---
-     1	#!/usr/bin/env bash
-     2	# depsort: reads "a b" lines ("a needs b") from FILE or stdin.
-     3	# Prints one build order (dependencies first), one package per line.
-     4	# On a cycle prints "cycle: <packages in the cycle>" and exits 1.
-     5	set -u
-     6	awk '
-     7	  NF >= 2 {
-     8	    a = $1; b = $2
-     9	    if (!(a in seen)) { seen[a]; order[++n] = a }
-    10	    if (!(b in seen)) { seen[b]; order[++n] = b }
-    11	    k = b SUBSEP a                      # build b before a
-    12	    if (!(k in dedup)) { dedup[k] = 1; adj[b] = adj[b] " " a; indeg[a]++ }
-    13	    need[a] = need[a] " " b             # a needs b (for cycle extraction)
-    14	  }
-    15	  END {
-    16	    for (i = 1; i <= n; i++) if (indeg[order[i]] + 0 == 0) q[++tail] = order[i]
-    17	    head = 1; out = 0
-    18	    while (head <= tail) {
-    19	      u = q[head++]; res[++out] = u
-    20	      m = split(adj[u], vs, " ")
-    21	      for (j = 1; j <= m; j++) if (--indeg[vs[j]] == 0) q[++tail] = vs[j]
-    22	    }
-    23	    if (out == n) { for (i = 1; i <= n; i++) print res[i]; exit 0 }
-    24	    # Cycle: walk needs-edges among unresolved nodes until one repeats.
-    25	    for (i = 1; i <= n; i++) if (indeg[order[i]] > 0) { start = order[i]; break }
-    26	    pos = 0; u = start
-    27	    while (!(u in where)) {
-    28	      where[u] = ++pos; path[pos] = u; nxt = ""
-    29	      m = split(need[u], vs, " ")
-    30	      for (j = 1; j <= m; j++) if (indeg[vs[j]] > 0) { nxt = vs[j]; break }
-    31	      u = nxt
-    32	    }
-    33	    cyc = ""
-    34	    for (i = where[u]; i <= pos; i++) cyc = cyc (cyc == "" ? "" : " ") path[i]
-    35	    print "cycle: " cyc
-    36	    exit 1
-    37	  }
-    38	' "${1:--}"
---- sizes ---
-  38 bin/depsort
-  30 gen.sh
-  60 check.sh
- 128 total
----
+Job: job 2 exited 0 — note: 300-case depsort run (A+B fixed)
+Bash: --- depsort.pre-fix -> depsort ---
+--- depsort.pre-fix	2026-10-26 22:05:13.733930435 +0800
++++ depsort	2026-10-26 22:05:22.319230172 +0800
+@@ -5,7 +5,7 @@
+ # "cycle: <p1> <p2> ... <p1>" if the dependency graph has a cycle.
+ 
+ NF == 0 { next }
+-NF != 2 { printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; exit 2 }
++NF != 2 { err = 1; printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; next }
+ {
+     a = $1; b = $2
+     if (!(a in seen)) { seen[a] = 1; nodes[++n] = a }
+@@ -40,6 +40,7 @@
+ }
+ 
+ END {
++    if (err) exit 2
+     if (n == 0) exit 0                     # empty input -> empty order
+ 
+     # sort package names so the output is deterministic (insertion sort)
+diff_status=1
+--- tail of job 2 log ---
+PASS case 300  seed-header[8 8 1] status=1 lines=1
+
+TOTAL 300  PASS 300  FAIL 0
+--- cases on disk ---
+300
+--- malformed statuses seen (exit 2) : none expected from generator ---
+0
 [status 0]
-Bash: job 1 started, pid 2810967, log /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/1/log
-launched
+Bash: [truncated: total 302 lines, showing last 100; full output at /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/raw/19.raw]
+PASS case 203  seed-header[4 2 0] status=0 lines=3
+PASS case 204  seed-header[8 1 0] status=0 lines=2
+PASS case 205  seed-header[7 2 0] status=0 lines=4
+PASS case 206  seed-header[4 4 1] status=1 lines=1
+PASS case 207  seed-header[3 3 0] status=1 lines=1
+PASS case 208  seed-header[7 6 0] status=0 lines=6
+PASS case 209  seed-header[4 7 0] status=1 lines=1
+PASS case 210  seed-header[5 4 0] status=1 lines=1
+PASS case 211  seed-header[2 5 0] status=1 lines=1
+PASS case 212  seed-header[3 7 0] status=1 lines=1
+PASS case 213  seed-header[8 2 0] status=0 lines=4
+PASS case 214  seed-header[2 3 0] status=1 lines=1
+PASS case 215  seed-header[8 2 0] status=0 lines=4
+PASS case 216  seed-header[2 8 0] status=1 lines=1
+PASS case 217  seed-header[2 6 0] status=1 lines=1
+PASS case 218  seed-header[6 1 0] status=0 lines=2
+PASS case 219  seed-header[3 3 1] status=1 lines=1
+PASS case 220  seed-header[2 1 0] status=1 lines=1
+PASS case 221  seed-header[5 4 0] status=1 lines=1
+PASS case 222  seed-header[4 3 0] status=0 lines=4
+PASS case 223  seed-header[6 8 1] status=1 lines=1
+PASS case 224  seed-header[7 1 0] status=0 lines=2
+PASS case 225  seed-header[5 1 0] status=0 lines=2
+PASS case 226  seed-header[4 2 0] status=0 lines=3
+PASS case 227  seed-header[3 7 1] status=1 lines=1
+PASS case 228  seed-header[7 5 0] status=0 lines=6
+PASS case 229  seed-header[8 9 0] status=0 lines=8
+PASS case 230  seed-header[7 8 0] status=1 lines=1
+PASS case 231  seed-header[6 6 0] status=1 lines=1
+PASS case 232  seed-header[7 9 0] status=1 lines=1
+PASS case 233  seed-header[6 5 0] status=0 lines=5
+PASS case 234  seed-header[3 9 0] status=1 lines=1
+PASS case 235  seed-header[2 2 0] status=1 lines=1
+PASS case 236  seed-header[5 8 0] status=1 lines=1
+PASS case 237  seed-header[5 7 0] status=1 lines=1
+PASS case 238  seed-header[4 4 0] status=1 lines=1
+PASS case 239  seed-header[6 5 0] status=1 lines=1
+PASS case 240  seed-header[6 5 0] status=0 lines=6
+PASS case 241  seed-header[2 3 0] status=1 lines=1
+PASS case 242  seed-header[6 1 0] status=1 lines=1
+PASS case 243  seed-header[2 8 0] status=1 lines=1
+PASS case 244  seed-header[5 1 1] status=1 lines=1
+PASS case 245  seed-header[8 7 0] status=1 lines=1
+PASS case 246  seed-header[5 1 0] status=0 lines=2
+PASS case 247  seed-header[6 1 0] status=0 lines=2
+PASS case 248  seed-header[6 2 1] status=1 lines=1
+PASS case 249  seed-header[5 9 0] status=1 lines=1
+PASS case 250  seed-header[8 8 1] status=1 lines=1
+PASS case 251  seed-header[8 5 0] status=1 lines=1
+PASS case 252  seed-header[5 5 1] status=1 lines=1
+PASS case 253  seed-header[7 4 0] status=1 lines=1
+PASS case 254  seed-header[7 8 1] status=1 lines=1
+PASS case 255  seed-header[3 5 0] status=1 lines=1
+PASS case 256  seed-header[6 4 0] status=1 lines=1
+PASS case 257  seed-header[4 7 0] status=1 lines=1
+PASS case 258  seed-header[7 5 1] status=1 lines=1
+PASS case 259  seed-header[4 3 0] status=1 lines=1
+PASS case 260  seed-header[5 7 0] status=1 lines=1
+PASS case 261  seed-header[6 2 0] status=1 lines=1
+PASS case 262  seed-header[6 8 0] status=1 lines=1
+PASS case 263  seed-header[3 4 0] status=1 lines=1
+PASS case 264  seed-header[4 7 0] status=1 lines=1
+PASS case 265  seed-header[3 7 1] status=1 lines=1
+PASS case 266  seed-header[3 8 0] status=1 lines=1
+PASS case 267  seed-header[3 4 0] status=1 lines=1
+PASS case 268  seed-header[7 6 0] status=1 lines=1
+PASS case 269  seed-header[8 5 1] status=1 lines=1
+PASS case 270  seed-header[3 7 0] status=1 lines=1
+PASS case 271  seed-header[6 8 1] status=1 lines=1
+PASS case 272  seed-header[7 1 0] status=0 lines=2
+PASS case 273  seed-header[4 8 1] status=1 lines=1
+PASS case 274  seed-header[4 8 0] status=1 lines=1
+PASS case 275  seed-header[5 8 1] status=1 lines=1
+PASS case 276  seed-header[7 7 0] status=1 lines=1
+PASS case 277  seed-header[2 3 1] status=1 lines=1
+PASS case 278  seed-header[2 5 0] status=1 lines=1
+PASS case 279  seed-header[5 6 1] status=1 lines=1
+PASS case 280  seed-header[7 2 0] status=0 lines=3
+PASS case 281  seed-header[3 9 0] status=1 lines=1
+PASS case 282  seed-header[5 4 0] status=1 lines=1
+PASS case 283  seed-header[4 6 1] status=1 lines=1
+PASS case 284  seed-header[4 2 0] status=1 lines=1
+PASS case 285  seed-header[7 7 0] status=1 lines=1
+PASS case 286  seed-header[6 8 0] status=1 lines=1
+PASS case 287  seed-header[8 9 0] status=1 lines=1
+PASS case 288  seed-header[3 5 0] status=1 lines=1
+PASS case 289  seed-header[8 5 0] status=1 lines=1
+PASS case 290  seed-header[6 6 1] status=1 lines=1
+PASS case 291  seed-header[2 9 0] status=1 lines=1
+PASS case 292  seed-header[7 7 0] status=1 lines=1
+PASS case 293  seed-header[5 8 0] status=1 lines=1
+PASS case 294  seed-header[3 5 1] status=1 lines=1
+PASS case 295  seed-header[6 8 0] status=1 lines=1
+PASS case 296  seed-header[8 6 1] status=1 lines=1
+PASS case 297  seed-header[7 9 0] status=0 lines=7
+PASS case 298  seed-header[7 5 1] status=1 lines=1
+PASS case 299  seed-header[6 1 0] status=0 lines=2
+PASS case 300  seed-header[8 8 1] status=1 lines=1
+
+TOTAL 300  PASS 300  FAIL 0
 [status 0]
-Job: job 1 exited 0 — note: 300-case-run
-Bash: [truncated: total 301 lines, showing last 100; full output at /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/raw/13.raw]
-case 202 PASS cycle-valid
-case 203 PASS cycle-valid
-case 204 PASS cycle-valid
-case 205 PASS cycle-valid
-case 206 PASS cycle-valid
-case 207 PASS cycle-valid
-case 208 PASS valid-order
-case 209 PASS cycle-valid
-case 210 PASS cycle-valid
-case 211 PASS cycle-valid
-case 212 PASS cycle-valid
-case 213 PASS cycle-valid
-case 214 PASS cycle-valid
-case 215 PASS cycle-valid
-case 216 PASS cycle-valid
-case 217 PASS cycle-valid
-case 218 PASS cycle-valid
-case 219 PASS cycle-valid
-case 220 PASS valid-order
-case 221 PASS cycle-valid
-case 222 PASS valid-order
-case 223 PASS cycle-valid
-case 224 PASS cycle-valid
-case 225 PASS cycle-valid
-case 226 PASS valid-order
-case 227 PASS cycle-valid
-case 228 PASS cycle-valid
-case 229 PASS cycle-valid
-case 230 PASS cycle-valid
-case 231 PASS cycle-valid
-case 232 PASS cycle-valid
-case 233 PASS cycle-valid
-case 234 PASS valid-order
-case 235 PASS cycle-valid
-case 236 PASS cycle-valid
-case 237 PASS cycle-valid
-case 238 PASS cycle-valid
-case 239 PASS cycle-valid
-case 240 PASS cycle-valid
-case 241 PASS cycle-valid
-case 242 PASS cycle-valid
-case 243 PASS valid-order
-case 244 PASS cycle-valid
-case 245 PASS cycle-valid
-case 246 PASS cycle-valid
-case 247 PASS cycle-valid
-case 248 PASS valid-order
-case 249 PASS valid-order
-case 250 PASS cycle-valid
-case 251 PASS cycle-valid
-case 252 PASS valid-order
-case 253 PASS cycle-valid
-case 254 PASS cycle-valid
-case 255 PASS valid-order
-case 256 PASS cycle-valid
-case 257 PASS cycle-valid
-case 258 PASS valid-order
-case 259 PASS cycle-valid
-case 260 PASS cycle-valid
-case 261 PASS cycle-valid
-case 262 PASS cycle-valid
-case 263 PASS cycle-valid
-case 264 PASS valid-order
-case 265 PASS cycle-valid
-case 266 PASS cycle-valid
-case 267 PASS cycle-valid
-case 268 PASS cycle-valid
-case 269 PASS valid-order
-case 270 PASS cycle-valid
-case 271 PASS cycle-valid
-case 272 PASS cycle-valid
-case 273 PASS cycle-valid
-case 274 PASS cycle-valid
-case 275 PASS cycle-valid
-case 276 PASS cycle-valid
-case 277 PASS valid-order
-case 278 PASS cycle-valid
-case 279 PASS cycle-valid
-case 280 PASS cycle-valid
-case 281 PASS cycle-valid
-case 282 PASS valid-order
-case 283 PASS cycle-valid
-case 284 PASS valid-order
-case 285 PASS cycle-valid
-case 286 PASS cycle-valid
-case 287 PASS cycle-valid
-case 288 PASS cycle-valid
-case 289 PASS cycle-valid
-case 290 PASS valid-order
-case 291 PASS cycle-valid
-case 292 PASS cycle-valid
-case 293 PASS cycle-valid
-case 294 PASS cycle-valid
-case 295 PASS cycle-valid
-case 296 PASS cycle-valid
-case 297 PASS valid-order
-case 298 PASS cycle-valid
-case 299 PASS cycle-valid
-case 300 PASS valid-order
-RUN-DONE
-[status 0]
-Bash: --- head ---
-case 001 PASS valid-order
-case 002 PASS cycle-valid
-case 003 PASS cycle-valid
-case 004 PASS cycle-valid
-case 005 PASS cycle-valid
-case 006 PASS valid-order
-case 007 PASS cycle-valid
-case 008 PASS cycle-valid
-case 009 PASS cycle-valid
-case 010 PASS cycle-valid
-case 011 PASS cycle-valid
-case 012 PASS cycle-valid
+Bash: --- first 5 ---
+PASS case   1  seed-header[2 1 0] status=1 lines=1
+PASS case   2  seed-header[8 1 1] status=1 lines=1
+PASS case   3  seed-header[8 9 0] status=1 lines=1
+PASS case   4  seed-header[8 2 0] status=0 lines=4
+PASS case   5  seed-header[6 8 0] status=1 lines=1
+--- lines 100-102 ---
+PASS case 100  seed-header[5 9 1] status=1 lines=1
+PASS case 101  seed-header[2 5 0] status=1 lines=1
+PASS case 102  seed-header[5 5 0] status=1 lines=1
+--- last 3 ---
+PASS case 298  seed-header[7 5 1] status=1 lines=1
+PASS case 299  seed-header[6 1 0] status=0 lines=2
+PASS case 300  seed-header[8 8 1] status=1 lines=1
+
+TOTAL 300  PASS 300  FAIL 0
 --- counts ---
-PASS=300  FAIL=0  total=300
-cycle-valid=247  valid-order=53
---- tail ---
-case 299 PASS cycle-valid
-case 300 PASS valid-order
-RUN-DONE
+PASS lines: 300
+FAIL lines: 0
+TOTAL line: TOTAL 300  PASS 300  FAIL 0
 [status 0]
-Bash: #!/usr/bin/env bash
-# check.sh CASE_FILE BIN -> one PASS/FAIL line.
-set -u
-casef=$1; bin=$2
-out=$("$bin" "$casef" 2>&1); st=$?
-declare -A needs=() seen=() color=() cnt=() pos=()
-declare -a names=()
-while read -r a b rest; do
-  [ -n "${a:-}" ] && [ -n "${b:-}" ] || continue
-  for x in "$a" "$b"; do [ -z "${seen[$x]:-}" ] && { seen[$x]=1; names+=("$x"); }; done
-  needs[$a]="${needs[$a]:-} $b"
-done < "$casef"
+Bash: # depsort
+
+`depsort` is a dependency sorter written as an awk script (`#!/usr/bin/awk -f`).
+It reads pairs of the form `a b` meaning "a needs b" from a file argument or
+from stdin and prints a valid install order.
+
+## Behaviour
+
+- **Algorithm**: Kahn's algorithm. Among the packages that are currently ready
+  (all dependencies already emitted) the alphabetically smallest one is chosen,
+  so the output is deterministic. Edges are deduplicated and package names are
+  insertion-sorted before the run.
+- **Cycles**: when nodes remain after Kahn's pass, a recursive DFS over the
+  residual graph prints a closed walk of real input edges,
+  `cycle: <n1> <n2> ... <n1>`, and exits 1.
+- **Blank lines** are skipped.
+- **Malformed input**: any line that does not have exactly two fields is
+  reported on stderr as `depsort: bad line <NR>: <line>`; the run continues and
+  the process exits 2.
+- **Input**: a filename argument, or stdin if none is given. Empty input is a
+  success with no output.
+
+## Exit codes
+
+| code | meaning |
+|------|---------|
+| 0 | a valid order was printed |
+| 1 | a cycle was found (closed walk printed) |
+| 2 | at least one malformed input line |
+
+## Proving it
+
+The full suite is 300 randomly generated cases. Each case gets a random graph
+from `gen.sh <seed>` (some forced to contain a cycle) and is checked by an
+independent verifier, `check.awk`, which confirms that the reported order is a
+permutation of the packages respecting every edge, or that the reported cycle is
+a closed walk of real input edges.
+
+    ./run_cases.sh 300
+
+Single-case spot checks:
+
+    printf 'a b\nb a\n' | ./depsort        # -> cycle: a b a, exit 1
+    printf 'a b\nbogus\n' | ./depsort      # -> stderr bad line 2, exit 2
+    printf 'a b\nc b\nb d\n' | ./depsort   # -> d b a c, exit 0
+
+## Measured results
+
+- `./run_cases.sh 300`: **300 cases generated, 300 passed, 0 failed.**
+- Before the fixes (`gen.sh` produced 1-field lines for n==1, and awk's `END`
+  block overrode the malformed-line `exit 2` with its own status), the same
+  suite gave **289 passed, 11 failed** — the checker caught the real defect.
+
+The pre-fix sources are kept for reference in `depsort.pre-fix` and
+`gen.sh.pre-fix`.
 ---
-#!/usr/bin/env bash
-# gen.sh SEED -> random case on stdout. Mostly acyclic (edges follow a hidden random
-# order); ~1 in 4 seeds get a deliberately injected cycle. Includes repeats and
-# right-only/left-only packages.
-set -u
-RANDOM=$1
----
-38 bin/depsort
-[status 0]
-Bash: 66 RESULT.md
-66
-status=0
-[status 0]
-Bash:
+RESULT.md
+cases
+check.awk
+depsort
+depsort.pre-fix
+gen.sh
+gen.sh.pre-fix
+out
+run_cases.sh
+scratch
 [status 0]
 Bash:
 [status 0]

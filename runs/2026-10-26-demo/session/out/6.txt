@@ -1,10 +1,1 @@
-== cycle a->b->a plus downstream c needs a:
-cycle: a b
-status=1
-== simple chain:
-util
-lib
-app
-status=0
-bash: eval: line 363: syntax error near unexpected token `newline'
-bash: eval: line 363: `</｜｜DSML｜｜ parameter>'
+job 1 exited 1 — note: 300-case depsort run

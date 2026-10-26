@@ -1,20 +1,12 @@
---- head ---
-case 001 PASS valid-order
-case 002 PASS cycle-valid
-case 003 PASS cycle-valid
-case 004 PASS cycle-valid
-case 005 PASS cycle-valid
-case 006 PASS valid-order
-case 007 PASS cycle-valid
-case 008 PASS cycle-valid
-case 009 PASS cycle-valid
-case 010 PASS cycle-valid
-case 011 PASS cycle-valid
-case 012 PASS cycle-valid
---- counts ---
-PASS=300  FAIL=0  total=300
-cycle-valid=247  valid-order=53
---- tail ---
-case 299 PASS cycle-valid
-case 300 PASS valid-order
-RUN-DONE
+=== lines 7-10 ===
+NF == 0 { next }
+NF != 2 { err = 1; printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; next }
+{
+    a = $1; b = $2
+=== END head ===
+END {
+    if (err) exit 2
+    if (n == 0) exit 0                     # empty input -> empty order
+
+    # sort package names so the output is deterministic (insertion sort)
+    for (i = 2; i <= n; i++) {

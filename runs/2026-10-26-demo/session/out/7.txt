@@ -1,42 +1,21 @@
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 1  PASS valid-order
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 2  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 3  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 4  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 5  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 6  PASS valid-order
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 7  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 8  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 9  PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 10 PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 11 PASS cycle-valid
-./gen.sh: line 28: syntax error near unexpected token `('
-./gen.sh: line 28: `  declare -ac=()'
-seed 12 PASS cycle-valid
-empty:          PASS valid-order
-repeats:        PASS valid-order
-one-token line: PASS valid-order
-self-loop:      PASS cycle-valid
-bash: eval: line 539: syntax error near unexpected token `newline'
-bash: eval: line 539: `</｜｜DSML｜｜ parameter>'
+289
+FAIL case  75  seed-header[1 2 1] status=1 :: malformed pair line 3
+FAIL case  94  seed-header[1 4 1] status=1 :: malformed pair line 5
+FAIL case 150  seed-header[1 4 1] status=1 :: malformed pair line 5
+FAIL case 160  seed-header[1 9 1] status=1 :: malformed pair line 10
+FAIL case 177  seed-header[1 9 1] status=1 :: malformed pair line 10
+PASS case 300  seed-header[7 8 1] status=1 lines=1
+
+TOTAL 300  PASS 289  FAIL 11
+=== case 75 input ===
+p0 p0
+p0 p0
+p0 
+ p0
+=== depsort output ===
+cycle: p0 p0
+status was recorded in log
+depsort: bad line 3: p0 
+rerun status=1
+bash: eval: line 302: syntax error near unexpected token `newline'
+bash: eval: line 302: `bgwait</｜｜DSML｜｜ parameter>'

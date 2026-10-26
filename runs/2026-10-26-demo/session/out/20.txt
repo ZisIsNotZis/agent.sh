@@ -1,0 +1,20 @@
+--- first 5 ---
+PASS case   1  seed-header[2 1 0] status=1 lines=1
+PASS case   2  seed-header[8 1 1] status=1 lines=1
+PASS case   3  seed-header[8 9 0] status=1 lines=1
+PASS case   4  seed-header[8 2 0] status=0 lines=4
+PASS case   5  seed-header[6 8 0] status=1 lines=1
+--- lines 100-102 ---
+PASS case 100  seed-header[5 9 1] status=1 lines=1
+PASS case 101  seed-header[2 5 0] status=1 lines=1
+PASS case 102  seed-header[5 5 0] status=1 lines=1
+--- last 3 ---
+PASS case 298  seed-header[7 5 1] status=1 lines=1
+PASS case 299  seed-header[6 1 0] status=0 lines=2
+PASS case 300  seed-header[8 8 1] status=1 lines=1
+
+TOTAL 300  PASS 300  FAIL 0
+--- counts ---
+PASS lines: 300
+FAIL lines: 0
+TOTAL line: TOTAL 300  PASS 300  FAIL 0

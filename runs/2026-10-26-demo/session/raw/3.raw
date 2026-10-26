@@ -1,5 +1,5 @@
-q
-p
-status=0
-bash: eval: line 260: syntax error near unexpected token `parameter'
-bash: eval: line 260: `for s in 1 2 3; do ./gen.sh $s > c$s.in; echo "seed $s: $(./check.sh c$s.in $PWD/bin/depsort)"; done</｜｜DSML｜｜ parameter>'
+good order -> [edge a->b violated (b=2, a=1)]
+reversed order -> []
+fake cycle -> [cycle uses edge that does not exist: b a]
+bash: eval: line 355: syntax error near unexpected token `newline'
+bash: eval: line 355: `diff <(./depsort /tmp/t1.txt) <(./depsort < /tmp/t1.txt) && echo "stdin==file OK"</｜｜DSML｜｜ parameter>'

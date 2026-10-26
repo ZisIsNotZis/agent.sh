@@ -1,15 +1,17 @@
 /home/z/vibe/agent.sh/runs/2026-10-26-demo/work
-total 0
-drwxrwx--- 1 z z   0 Oct 26 21:43 .
-drwxrwx--- 1 z z 118 Oct 26 21:43 ..
-GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
 GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
-app
-lib
-util
+GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
+d
+b
+a
+c
 status=0
-cycle: a b c
+cycle: a b a
 status=1
 empty status=0
-bash: eval: line 98: syntax error near unexpected token `newline'
-bash: eval: line 98: `printf 'x y\nx y\ny z\n' | bin/depsort; echo "dup status=$?"</｜｜DSML｜｜ parameter>'
+b
+a
+x
+dup status=0
+bash: eval: line 188: syntax error near unexpected token `newline'
+bash: eval: line 188: `printf 'a b\nb c\nc a\nd e\n' | ./depsort; echo "cycle status=$?"</｜｜DSML｜｜ parameter>'

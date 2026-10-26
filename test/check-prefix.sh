@@ -36,6 +36,11 @@ agent=${AGENT_SH:-}
 [[ -n $agent ]] || agent=$(find_agent) ||
   { printf 'check-prefix: no agent.sh above %s; set AGENT_SH\n' "$dir" >&2; exit 66; }
 
+# the requests live beside the trajectory when the session root is the run directory, and in
+# `session/` when the harness was pointed at a session inside it
+reqdir=$dir
+compgen -G "$dir/session/req.*.json" >/dev/null && reqdir=$dir/session
+
 failed=0
 boundaries=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
 [ -n "${boundaries:-}" ] || boundaries=0
@@ -43,21 +48,21 @@ boundaries=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
 # --- 1. the trajectory is the request that was sent -----------------------------------------
 requests=0
 rebuilt=0
-if compgen -G "$dir/req.*.json" >/dev/null; then
+if compgen -G "$reqdir/req.*.json" >/dev/null; then
   printf 'the record rebuilds every request\n'
-  for f in $(ls "$dir"/req.*.json | sed -n 's/.*\/req\.\([0-9][0-9]*\)\.json$/\1/p' | sort -n); do
+  for f in $(ls "$reqdir"/req.*.json | sed -n 's/.*\/req\.\([0-9][0-9]*\)\.json$/\1/p' | sort -n); do
     requests=$((requests + 1))
-    if ! jq -S . "$dir/req.$f.json" >"$dir/.sent.$f" 2>/dev/null; then
+    if ! jq -S . "$reqdir/req.$f.json" >"$reqdir/.sent.$f" 2>/dev/null; then
       printf 'turn %-4s UNREADABLE request file\n' "$f"; failed=1; continue
     fi
-    if bash "$agent" --replay "$dir" "$f" >"$dir/.rebuilt.$f" 2>/dev/null &&
-       cmp -s "$dir/.sent.$f" "$dir/.rebuilt.$f"; then
+    if bash "$agent" --replay "$reqdir" "$f" >"$reqdir/.rebuilt.$f" 2>/dev/null &&
+       cmp -s "$reqdir/.sent.$f" "$reqdir/.rebuilt.$f"; then
       rebuilt=$((rebuilt + 1))
       printf 'turn %-4s rebuilt from the trajectory, identical to what was sent\n' "$f"
     else
       printf 'turn %-4s THE RECORD DOES NOT REBUILD THIS REQUEST\n' "$f"; failed=1
     fi
-    rm -f "$dir/.sent.$f" "$dir/.rebuilt.$f"
+    rm -f "$reqdir/.sent.$f" "$reqdir/.rebuilt.$f"
   done
 else
   printf 'the record rebuilds every request: no req.*.json here, so this check cannot run\n'
