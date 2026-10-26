@@ -9,7 +9,7 @@ The harness is the outer bash — it owns the API call, the trajectory, the labe
 ```sh
 git clone https://github.com/ZisIsNotZis/agent.sh
 cd agent.sh
-bash test/run.sh                                   # every invariant, no API call, under two seconds
+bash test/run.sh                                   # every invariant, no API call, a few seconds
 bash agent.sh --blocks examples/tour.sh            # the harness with the model's place taken by a file
 ```
 
@@ -30,7 +30,9 @@ Every agent framework answers "how does the model act?" by parsing its text for 
 
 That boundary is arithmetic, not a search. The block is transported as a nonce-delimited heredoc; the output goes to a file; the control pipe carries one slip, `SENT <nonce> <exit> <bytes>`, followed by `\x02`; the outer bash reads the file's own length and only accepts a slip whose size matches it.
 
-So no *accidental* output can pass for a slip: the nonce is fresh per block and the size is checked against the file. A block that deliberately sets out to speak in the harness's voice can still do it — it runs inside the shell that reports the boundary, and no amount of care changes that; the size check is what turns the cheapest version into a loud disagreement instead of a silent lie. It is written down as a residual in [`docs/design.md`](docs/design.md) rather than left as a claim.
+So no *accidental* output can pass for a slip: the nonce is fresh per block, and the size in the slip is only a cross-check against the file, so a forged size is reported as `[the boundary did not hold: …]` rather than believed.
+
+What this cannot do, and does not claim: a block runs inside the shell that reports the boundary, so a block that deliberately shadows `builtin` (or, before the `builtin`/`command` hardening, `printf`, `wc`, `eval` or `read`) can state a status the harness will take at face value when the size happens to match. The boundary protects against accidents and against the cheap lies; it is not a sandbox for the reporter. [`docs/design.md`](docs/design.md) D10 records that with the reproduction, and the roadmap carries the change that would close it (P8).
 
 ## What a turn looks like
 
@@ -75,7 +77,7 @@ The milestone, its four terms, the not-doing list and every decision taken with 
 
 ## The demo run
 
-[`runs/2026-10-26-demo/`](runs/2026-10-26-demo/) is one unattended run, committed as it happened: the trajectory, the meter, the requests, the workspace the agent left behind, and the command that regenerates all of it. Seventeen turns, one background job, one truncation, two compactions, 86k prompt tokens, and — the part that matters — `bash check-prefix.sh` finds every prefix intact across it. `notes.md` points at the line each piece of evidence sits on, and says what the run cost to get.
+[`runs/2026-10-26-demo/`](runs/2026-10-26-demo/) is one unattended run, committed as it happened: the trajectory, the meter, the requests, the workspace the agent left behind, and the command that regenerates all of it. Twenty turns, two background jobs, two truncations, three compactions, 108k prompt tokens, and — the part that matters — `bash check-prefix.sh` rebuilds every request from the record and finds every prefix intact across it. `notes.md` points at the line each piece of evidence sits on, and says what the run cost to get.
 
 ## Design, and what it cost
 

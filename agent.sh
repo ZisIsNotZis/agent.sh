@@ -59,14 +59,25 @@ fi
 [[ $lines_max =~ ^[0-9]+$ ]] || { printf 'agent.sh: --lines takes a number\n' >&2; exit 64; }
 [[ $max_turns =~ ^[0-9]+$ ]] || { printf 'agent.sh: --max-turns takes a number\n' >&2; exit 64; }
 [[ $compact_at =~ ^[0-9]+$ ]] || { printf 'agent.sh: --compact-at takes a number\n' >&2; exit 64; }
+# a wait of zero would mean "forever", which is the failure this bound exists to prevent
+[[ $block_timeout =~ ^[1-9][0-9]*$ ]] || { printf 'agent.sh: AGENT_SH_BLOCK_TIMEOUT must be a positive number\n' >&2; exit 64; }
+[[ $job_wait =~ ^[1-9][0-9]*$ ]] || { printf 'agent.sh: AGENT_SH_JOB_WAIT must be a positive number\n' >&2; exit 64; }
+
 
 sess=${sess:-${AGENT_SH_SESSION_ROOT:-$PWD/.session}/$(date -u +%Y%m%dT%H%M%SZ)-$$}
-mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" || exit 73
 traj=$sess/traj.md
 export AGENT_SH_SESSION=$sess AGENT_SH_JOBS=$sess/jobs
+# `--replay` only reads: it writes its scratch files to a temporary directory of its own, so a
+# check of a session cannot change the session it is checking
+scratch=$sess
+if ((replay)); then
+  scratch=$(mktemp -d) || exit 73
+  trap 'rm -rf "$scratch"' EXIT
+fi
+((replay)) || { mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" || exit 73; }
 
 # --- the hands' env: the only two functions the model is given, and nothing else ------------
-cat >"$sess/env.sh" <<'ENV'
+cat >"$scratch/env.sh" <<'ENV'
 # Sourced by the hands through BASH_ENV. Stateless and idempotent: subagent hands source it too.
 bgrun() {
   local note='' seq d pid
@@ -106,7 +117,7 @@ bgwait() {
   return "$st"
 }
 ENV
-export BASH_ENV=$sess/env.sh
+export BASH_ENV=$scratch/env.sh
 
 # --- the hands: a bash with no tty, in its own session, reachable only over the coproc ------
 start_hands() {
@@ -130,26 +141,26 @@ exec_block() {         # $1 body, $2 seconds to wait (0 = forever); sets raw chu
   nonce=$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')
   d="__AGENT_${nonce}__"
 
-  printf "read -r -d '' __b <<'%s'\n%s\n%s\n" "$d" "$body" "$d" >&"${HANDS[1]}" 2>/dev/null || return 70
-  printf '%s' "eval -- \"\$__b\" >\"$raw\" 2>&1; __s=\$?; __n=\$(command wc -c <\"$raw\"); builtin printf 'SENT $nonce %d %d\x02' \"\$__s\" \"\$__n\"
+  printf "builtin read -r -d '' __b <<'%s'\n%s\n%s\n" "$d" "$body" "$d" >&"${HANDS[1]}" 2>/dev/null || return 70
+  printf '%s' "builtin eval -- \"\$__b\" >\"$raw\" 2>&1; __s=\$?; __n=\$(command wc -c <\"$raw\"); builtin printf 'SENT $nonce %d %d\x02' \"\$__s\" \"\$__n\"
 " >&"${HANDS[1]}" 2>/dev/null || return 70
   # a block that never finishes is the one way an unattended run dies of nothing: no slip
   # turns into a wall-clock bound, and the price is the shell state, which is honest.
   # a block that never finishes is the one way an unattended run dies of nothing: no slip
   # turns into a wall-clock bound, and the price is the shell state, which is honest.
-  local junk=0
+  local deadline
+
+  deadline=$(($(date +%s) + tmo))
   while :; do
-    if [[ $tmo == 0 ]]; then
-      IFS= read -r -d $'\x02' t <&"${HANDS[0]}"; rc=$?
-    else
-      IFS= read -r -t "$tmo" -d $'\x02' t <&"${HANDS[0]}"; rc=$?
-    fi
+    # the budget is a wall clock across every skipped record, so a payload cannot buy time by
+    # writing stray boundaries and cannot exhaust a record count either
+    local left=$((deadline - $(date +%s)))
+    ((left > 0)) || return 73
+    [[ -v HANDS[0] ]] || return 71      # the hands are gone: no farther slip is coming
+    IFS= builtin read -r -t "$left" -d $'\x02' t <&"${HANDS[0]-}"; rc=$?
     ((rc == 0)) || { ((rc > 128)) && return 73; return 71; }
     [[ $t == "SENT $nonce "* ]] && break
-    # not this block's slip: a stray byte, or something speaking in the harness's voice. Skip it
-    # and keep looking, so a payload cannot end the block by writing \x02 into the stream.
-    junk=$((junk + 1))
-    ((junk > 64)) && return 72
+    # not this block's slip: a stray byte, or something speaking in the harness's voice
   done
   read -r st sz <<<"${t#SENT $nonce }"
 
@@ -255,7 +266,7 @@ lost() {
   restart_hands
 }
 
-start_hands
+((replay)) || start_hands
 block=''
 
 deliver() {            # $1 body; 1 when the hands had to be replaced
@@ -277,15 +288,18 @@ pending() {            # jobs with a pid and no status yet; counts them
 }
 
 drain() {              # waits out the jobs, one Job: message per job, and counts the waits
-  local c k rc
+  local c k rc k_prev
   while :; do
-    (($(pending) > 0)) || return 0
+    k_prev=$(pending)
+    ((k_prev > 0)) || return 0
     polls=$((polls + 1))
     exec_block 'bgwait' "$job_wait"; rc=$?
     if ((rc == 73)); then
       # a job that outlives the wait is not a reason to end an unattended run: say so, leave it
       # pending, and let a later drain collect it
       printf 'Job: [no job finished within %ss; %s still running]\n' "$job_wait" "$(pending)"
+      printf '<|user|>\nJob: [no job finished within %ss; %s still running]\n' \
+        "$job_wait" "$(pending)" >>"$traj"
       return 0
     fi
     if ((rc != 0 && rc != 74)); then
@@ -310,8 +324,19 @@ drain() {              # waits out the jobs, one Job: message per job, and count
       return 0
     fi
     # the harness waited, not the model: the record carries the message and no invented block
+    k=$((k_prev))
     printf 'Job: %s\n' "$body"
     printf '<|user|>\nJob: %s\n' "$body" >>"$traj"
+    # a message is only a reap if the job table says so; a hands that answers without reaping
+    # would otherwise spin here forever, printing a job that never finished
+    if (($(pending) >= k_prev)); then
+      for c in "$AGENT_SH_JOBS"/*/; do
+        [[ -f $c/pid && ! -f $c/status ]] || continue
+        printf 'lost\n' >"$c/status"
+      done
+      printf 'Job: [that message did not reap anything; the job table is unchanged]\n' >&2
+      return 1
+    fi
   done
 }
 
@@ -386,22 +411,22 @@ parse_traj() {         # fills mrole, mcontent, kept (messages to skip), sumtext
 build_request() {      # $1 out file, $2 an extra user message appended for this call
   local out=$1 extra=${2-} i
   parse_traj
-  : >"$sess/msgs.jsonl"
-  jq -cn --rawfile c "$prompt_file" '{role:"system",content:$c}' >>"$sess/msgs.jsonl"
+  : >"$scratch/msgs.jsonl"
+  jq -cn --rawfile c "$prompt_file" '{role:"system",content:$c}' >>"$scratch/msgs.jsonl"
   if [[ -n $sumtext ]]; then
     # the compacted history rides as one user message, so it is stable prefix and not system noise
     jq -cn --arg c "User: [everything before this point, summarised]
-$sumtext" '{role:"user",content:$c}' >>"$sess/msgs.jsonl"
+$sumtext" '{role:"user",content:$c}' >>"$scratch/msgs.jsonl"
   fi
   for ((i = kept; i < ${#mrole[@]}; i++)); do
-    jq -cn --arg r "${mrole[i]}" --arg c "${mcontent[i]}" '{role:$r,content:$c}' >>"$sess/msgs.jsonl"
+    jq -cn --arg r "${mrole[i]}" --arg c "${mcontent[i]}" '{role:$r,content:$c}' >>"$scratch/msgs.jsonl"
   done
   if [[ -n $extra ]]; then
-    jq -cn --arg c "$extra" '{role:"user",content:$c}' >>"$sess/msgs.jsonl"
+    jq -cn --arg c "$extra" '{role:"user",content:$c}' >>"$scratch/msgs.jsonl"
   fi
   jq -s --arg model "$model" --arg effort "$effort" --argjson max "$max_tokens" \
     '{model:$model, reasoning_effort:$effort, max_tokens:$max, messages:.}' \
-    "$sess/msgs.jsonl" >"$out"
+    "$scratch/msgs.jsonl" >"$out"
 }
 
 complete() {           # $1 request, $2 response: the one place a network call can happen
@@ -511,9 +536,8 @@ if ((replay)); then
   [[ -r $traj && $replay_turn =~ ^[1-9][0-9]*$ ]] || {
     printf 'agent.sh: --replay needs a session with a trajectory and a turn number\n' >&2; exit 64; }
   cut_assistant=$replay_turn
-  build_request "$sess/replay.json"
-  jq -S . "$sess/replay.json"
-  rm -f "$sess/replay.json"
+  build_request "$scratch/replay.json"
+  jq -S . "$scratch/replay.json"
   exit 0
 fi
 

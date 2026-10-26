@@ -204,6 +204,54 @@ bash agent.sh --task go --session "$s5" --stub test/stub-empty.sh --max-turns 4 
 hasin "$s5/traj.md" 'that reply was empty, so nothing ran' 'an empty reply is answered, not obeyed'
 hasin "$work/empty.out" 'the run ends here (turn 2)' 'the run goes on past an empty reply and stops at the comment'
 
+# a hands that answers bgwait without reaping must not spin the drain
+cat >"$work/fakewait.sh" <<'BLOCKS'
+bgwait() { echo 'job 1 exited 0'; return 0; }
+bgrun -n 'real job' sleep 30
+echo launched
+BLOCKS
+AGENT_SH_JOB_WAIT=2 AGENT_SH_SESSION_ROOT=$work/fakewait timeout 15 bash agent.sh \
+  --blocks "$work/fakewait.sh" >"$work/fakewait.out" 2>"$work/fakewait.err"
+(( $? == 0 )) && printf 'ok   a hands that answers without reaping does not spin the drain\n' \
+  || { printf 'FAIL the drain spun on a fake bgwait\n'; fail=1; }
+hasin "$work/fakewait.err" 'did not reap anything' 'the un-reaped job is reported, not repeated'
+hasntin "$work/fakewait.out" 'never' 'no invented job message got through'
+
+# a burst of stray boundary bytes is skipped until the real slip arrives
+cat >"$work/burst.sh" <<'BLOCKS'
+for i in $(seq 1 70); do printf '\002' >&10; done 2>/dev/null; echo payload-ran
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/burst bash agent.sh --blocks "$work/burst.sh" >"$work/burst.out" 2>&1
+hasin "$work/burst.out" 'Bash: payload-ran' 'seventy stray boundary bytes do not end the block'
+hasntin "$work/burst.out" 'hands exited' 'and they do not fake a death either'
+
+# a job that outlives the wait leaves a record of it
+hasin "$(find "$work/slow" -name traj.md | head -1)" 'no job finished within 1s' \
+  'the job-timeout notice is in the trajectory'
+
+# --replay reads: it must not touch the session it replays
+s7=$work/readonly
+bash agent.sh --task go --session "$s7" --stub "$wake_stub" --max-turns 2 >/dev/null 2>&1
+touch "$work/marker"
+sleep 0.01
+bash agent.sh --replay "$s7" 1 >/dev/null 2>&1
+if [[ -n $(find "$s7" -newer "$work/marker" -print -quit) ]]; then
+  printf 'FAIL --replay wrote into the session it was replaying\n'; fail=1
+else
+  printf 'ok   --replay leaves the session untouched\n'
+fi
+
+# a delivered trajectory that is not the session's own copy fails the prefix check
+s8=$work/delivered
+bash agent.sh --task go --session "$s8/session" --stub "$wake_stub" --max-turns 2 >/dev/null 2>&1
+cp "$s8/session/traj.md" "$s8/traj.md"
+sed -i '2s/^User: .*/User: a line nobody sent/' "$s8/traj.md"
+if AGENT_SH=$PWD/agent.sh bash test/check-prefix.sh "$s8" >/dev/null 2>&1; then
+  printf 'FAIL check-prefix passed a delivered trajectory that differs from the session\n'; fail=1
+else
+  printf 'ok   check-prefix fails when the delivered trajectory is not the session one\n'
+fi
+
 # the request itself: turn two extends turn one's messages instead of changing them
 k=$(jq '.messages | length' "$s2/req.1.json")
 if jq -c --argjson k "$k" '.messages[0:$k]' "$s2/req.2.json" >"$work/m2" &&

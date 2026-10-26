@@ -48,6 +48,14 @@ boundaries=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
 # --- 1. the trajectory is the request that was sent -----------------------------------------
 requests=0
 rebuilt=0
+
+# the delivered trajectory must be the session's own copy: the milestone points at runs/<demo>/traj.md,
+# so a check that replays session/traj.md while a reader reads another file proves nothing
+if [[ -f $dir/session/traj.md ]] && ! cmp -s "$dir/session/traj.md" "$traj"; then
+  printf 'the delivered trajectory is not the session one\n'
+  printf 'FAIL %s and %s differ\n' "$traj" "$dir/session/traj.md"
+  failed=1
+fi
 if compgen -G "$reqdir/req.*.json" >/dev/null; then
   printf 'the record rebuilds every request\n'
   for f in $(ls "$reqdir"/req.*.json | sed -n 's/.*\/req\.\([0-9][0-9]*\)\.json$/\1/p' | sort -n); do

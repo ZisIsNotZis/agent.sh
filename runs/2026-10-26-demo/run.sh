@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # run.sh — the demo, regenerated: one unattended agent run against deepseek-flash.
-# It costs metered tokens — 86k prompt tokens the run beside this file took —
+# It costs metered tokens — 108k prompt tokens the run beside this file took —
 # and it may be slow; everything it produces lands beside this file.
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
