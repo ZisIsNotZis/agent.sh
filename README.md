@@ -14,7 +14,7 @@ Two shell functions are injected through `BASH_ENV` (`bgrun`, `bgwait`) and noth
 ## Status
 
 Owned by a manager since 2026-10-23; the roadmap is `docs/roadmap.md` and one milestone is running.
-The boundary loop is in and green: `agent.sh` executes blocks and returns them labelled, with `bash test/run.sh` passing sixteen invariants on a scripted input, so no API is called yet and no real trajectory exists.
+The boundary loop is in and green: `agent.sh` executes blocks and returns them labelled, with `bash test/run.sh` passing seventeen invariants on a scripted input, so no API is called yet and no real trajectory exists.
 The design was settled with the person on 2026-10-22 and lives in `docs/design.md`.
 No licence and no unattended run yet — the roadmap names both, the second as the milestone.
 

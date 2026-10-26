@@ -69,8 +69,21 @@ Also decided, because the design left it to the manager: the trajectory stays ch
 ## Open, and who holds it
 
 - **The person's four settled questions are closed** by the decisions above; three of them were his and are now mine under `decide`.
-- **The degree in the workspace register** is still `unknown`, because he has not stated one; it is not mine to invent and it does not block M1.
-- **Licence and a runnable example** are missing from the front door for the same reason: neither is decided yet, and a placeholder would be worse than the absence. They are named in `README.md` as limits.
+- **Nothing else is waiting on him for M1.** The two things once listed here as his are resolved below, so a reader does not look for them twice.
+
+### The degree is `decide`, and the register already says so
+
+The row `agent.sh` in `docs/plan/portfolio.tsv` carries `level = decide`, so the degree is his word of the first contract and not a question any more: what he would otherwise take, this file takes above and records with its cost. An earlier line here called the degree `unknown`; that was mine, it fought the register, and the register wins.
+
+### Licence: open, and it is his
+
+A licence is a legal grant and it becomes publicly visible the moment it lands, so it is his to pick and not a manager's. The cost of leaving it open is that the repository reads as unusable-by-permission even though the code is public, and that `README.md` has to carry the absence as a named limit. The cost of deciding it is a `LICENSE` file and a line in `README.md`.
+
+Anything other than a permissive licence would be his to argue with himself, so the options the decision needs are: permissive (`MIT`, with the copyright holder he names), a patent-bearing permissive (`Apache-2.0`), or none public until he says otherwise. It does not block M1 and no package here waits on it.
+
+### A runnable unattended example: not a separate decision
+
+It reads like something missing, but it is exactly what M1 delivers — `runs/<date>-demo/` with its regenerating command — so nothing here waits on him for it either, and `README.md` says it is absent rather than promised.
 
 ## Evidence
 
