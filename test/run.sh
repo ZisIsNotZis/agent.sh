@@ -93,6 +93,52 @@ hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending
 wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
 hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
 
+# the reporter uses builtin/command, so a block that shadows printf or wc changes nothing
+cat >"$work/lie.sh" <<'BLOCKS'
+printf() { local n=${1#SENT }; n=${n%% *}; builtin printf 'SENT %s 42 3\002' "$n"; }
+wc() { echo 5; }
+echo ABCDE
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/lie bash agent.sh --blocks "$work/lie.sh" --lines 1000 \
+  >"$work/lie.out" 2>&1
+hasin "$work/lie.out" 'Bash: ABCDE' 'shadowing printf does not let a block speak for the harness'
+hasin "$work/lie.out" '[status 0]' 'the real status arrives despite a shadowed printf'
+hasntin "$work/lie.out" '[status 42]' 'a shadowed printf cannot set the reported status'
+hasntin "$work/lie.out" 'the boundary did not hold' 'and nothing about the boundary is disturbed'
+
+# the residual, stated and checked: shadow `builtin` itself and the slip is forged — but the
+# file is still the authority on size, so the lie is reported rather than believed
+cat >"$work/residual.sh" <<'BLOCKS'
+builtin() { local n=${2#SENT }; n=${n%% *}; command printf 'SENT %s 42 3\002' "$n"; }
+echo ABCDE
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/residual bash agent.sh --blocks "$work/residual.sh" --lines 1000 \
+  >"$work/residual.out" 2>&1
+hasin "$work/residual.out" 'the boundary did not hold: the slip said 3 bytes and the file holds 6' \
+  'a forged size is caught against the file, and said out loud'
+hasin "$work/residual.out" 'ABCDE' 'the forged slip does not hide what the block really printed'
+hasin "$work/residual.out" 'the status is the one the slip claimed, unproven' \
+  'the forged status is shown as unproven rather than passed off as the block status'
+
+# a stray byte on the control channel must not read as the hands dying
+cat >"$work/stray.sh" <<'BLOCKS'
+{ printf '\002' >&10; } 2>/dev/null; echo payload-ran
+%%
+echo still-here
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/stray bash agent.sh --blocks "$work/stray.sh" >"$work/stray.out" 2>&1
+hasin "$work/stray.out" 'Bash: payload-ran' 'a stray boundary byte is skipped, not read as a death'
+hasntin "$work/stray.out" 'the hands exited during this block' 'no false death is reported for a stray byte'
+
+# a job that outlives its wait does not hang the run
+cat >"$work/slow.sh" <<'BLOCKS'
+bgrun -n slow-job sleep 5
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/slow AGENT_SH_JOB_WAIT=1 timeout 20 bash agent.sh --blocks "$work/slow.sh" \
+  >"$work/slow.out" 2>&1
+hasin "$work/slow.out" 'no job finished within 1s; 1 still running' \
+  'a job that outlives the wait is reported, not waited on forever'
+
 # a block that never ends must not eat the run: it is bounded, and the harness survives it
 cat >"$work/stuck.sh" <<'BLOCKS'
 echo before-the-hang
@@ -130,7 +176,7 @@ hasin "$work/turn.out" 'Bash: hello from turn one' 'a turn runs its reply as the
 hasin "$work/turn.out" 'Job: job 1 exited 0' 'a job finishing between turns arrives as Job:'
 hasin "$s1/traj.md" '<|meter|> turn=1 prompt=2000' 'the trajectory carries a meter line per turn'
 hasin "$s1/traj.md" '<|meter|> turn=2' 'one meter line for each turn, in order'
-hasin "$work/turn.err" 'cumulative prompt 8000' 'the meter totals across the session'
+hasin "$work/turn.err" 'cumulative prompt 7000' 'the meter totals across the session'
 
 # resume: killed after one turn, continued, and the record only grew
 s2=$work/resume
@@ -142,7 +188,7 @@ if cmp -s -n "$(stat -c%s "$work/after-one.md")" "$work/after-one.md" "$s2/traj.
 else
   printf 'FAIL resume changed bytes the killed run had already written\n'; fail=1
 fi
-hasin "$s2/traj.md" 'turn=2 prompt=6000 hit=5800' 'the resumed turn is turn two, and the cache shows'
+hasin "$s2/traj.md" 'turn=2 prompt=5000 hit=4800' 'the resumed turn is turn two, and the cache shows'
 
 # the stop: a block with nothing to run ends the run instead of burning the turn budget
 s4=$work/stop
@@ -189,7 +235,7 @@ else
 fi
 
 # and the proof itself: the cache arithmetic, which must also be able to fail
-if bash test/check-prefix.sh "$s3" >"$work/prefix.out" 2>&1; then
+if AGENT_SH=$PWD/agent.sh bash test/check-prefix.sh "$s3" >"$work/prefix.out" 2>&1; then
   printf 'ok   check-prefix passes a run whose prefixes held (%s)\n' \
     "$(grep -o '[0-9]* boundaries, [0-9]* checked, 0 failed' "$work/prefix.out" | head -1)"
 else
@@ -198,11 +244,22 @@ fi
 mkdir -p "$work/broken"
 printf '<|meter|> turn=1 prompt=3000 hit=0 miss=3000 out=1 cum_prompt=3000\n<|meter|> turn=2 prompt=4000 hit=0 miss=4000 out=1 cum_prompt=7000\n' \
   >"$work/broken/traj.md"
-if bash test/check-prefix.sh "$work/broken" >/dev/null 2>&1; then
+if AGENT_SH=$PWD/agent.sh bash test/check-prefix.sh "$work/broken" >/dev/null 2>&1; then
   printf 'FAIL check-prefix passed a trajectory whose prefix was rewritten\n'; fail=1
 else
   printf 'ok   check-prefix fails a trajectory whose prefix was rewritten\n'
 fi
+
+# an edited trajectory must fail too: the record has to rebuild what was actually sent
+s6=$work/edited
+bash agent.sh --task go --session "$s6" --stub "$wake_stub" --max-turns 2 >/dev/null 2>&1
+sed -i 's/^User: go$/User: something else entirely/' "$s6/traj.md"
+if AGENT_SH=$PWD/agent.sh bash test/check-prefix.sh "$s6" >/dev/null 2>&1; then
+  printf 'FAIL check-prefix passed a trajectory that no longer rebuilds its requests\n'; fail=1
+else
+  printf 'ok   check-prefix fails a trajectory edited away from its requests\n'
+fi
+hasin "$s3/req.2.json" 'Job: job 1 exited 0' 'a Job: message is in the request, not invented in the record alone'
 
 ((fail == 0)) && printf '\nall invariants hold\n' || printf '\nsomething above failed\n'
 exit "$fail"

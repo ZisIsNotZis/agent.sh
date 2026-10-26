@@ -10,8 +10,13 @@
 #     stand in for what the model would have written.
 #
 # The boundary is arithmetic, not a search: the block's output goes to a file, and the control
-# pipe carries one slip `SENT <nonce> <exit> <bytes>` followed by \x02. Nothing in the payload
-# can impersonate a slip, and the byte count is a free integrity check.
+# pipe carries one slip `SENT <nonce> <exit> <bytes>` followed by \x02, with the nonce fresh per
+# block. The size in the slip is only ever cross-checked against the file, which is the authority;
+# a disagreement is reported as the boundary not holding rather than believed.
+# What this buys is that no *accidental* output can pass for a slip. What it cannot buy: the block
+# runs inside the shell that reports the boundary, so a block that deliberately shadows builtins
+# or reads the command stream can speak in the harness's voice. That is a known residual, written
+# down in docs/design.md, not a claim.
 # SPDX-License-Identifier: AGPL-3.0-only — see LICENSE.
 
 set -u
@@ -24,7 +29,11 @@ resume=''
 stub=''
 max_turns=8
 compact_at=0
+replay=0
+replay_turn=0
+cut_assistant=0   # when set, the parser stops before this assistant message (for --replay)
 block_timeout=${AGENT_SH_BLOCK_TIMEOUT:-300}
+job_wait=${AGENT_SH_JOB_WAIT:-600}
 usage() { awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0" | grep -v '^SPDX-'; }
 
 while (($#)); do
@@ -37,13 +46,14 @@ while (($#)); do
     --max-turns) max_turns=${2-}; shift 2 ;;
     --compact-at) compact_at=${2-}; shift 2 ;;
     --stub)   stub=${2-};        shift 2 ;;
+    --replay) replay=1; sess=${2-}; replay_turn=${3-}; shift 3 || shift $# ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'agent.sh: unknown argument %s\n' "$1" >&2; exit 64 ;;
   esac
 done
 if [[ -n $blocks_file ]]; then task=''; fi
-if [[ -z $blocks_file && -z ${task-} && -z ${resume-} ]]; then
-  printf 'agent.sh: --blocks <file>, --task <text> or --resume is required\n' >&2; exit 64
+if [[ -z $blocks_file && -z ${task-} && -z ${resume-} ]] && ((replay == 0)); then
+  printf 'agent.sh: --blocks <file>, --task <text>, --resume or --replay is required\n' >&2; exit 64
 fi
 [[ -z $blocks_file || -r $blocks_file ]] || { printf 'agent.sh: cannot read %s\n' "$blocks_file" >&2; exit 66; }
 [[ $lines_max =~ ^[0-9]+$ ]] || { printf 'agent.sh: --lines takes a number\n' >&2; exit 64; }
@@ -121,21 +131,35 @@ exec_block() {         # $1 body, $2 seconds to wait (0 = forever); sets raw chu
   d="__AGENT_${nonce}__"
 
   printf "read -r -d '' __b <<'%s'\n%s\n%s\n" "$d" "$body" "$d" >&"${HANDS[1]}" 2>/dev/null || return 70
-  printf '%s' "eval -- \"\$__b\" >\"$raw\" 2>&1; __s=\$?; __n=\$(wc -c <\"$raw\"); printf 'SENT $nonce %d %d\x02' \"\$__s\" \"\$__n\"
+  printf '%s' "eval -- \"\$__b\" >\"$raw\" 2>&1; __s=\$?; __n=\$(command wc -c <\"$raw\"); builtin printf 'SENT $nonce %d %d\x02' \"\$__s\" \"\$__n\"
 " >&"${HANDS[1]}" 2>/dev/null || return 70
   # a block that never finishes is the one way an unattended run dies of nothing: no slip
   # turns into a wall-clock bound, and the price is the shell state, which is honest.
-  if [[ $tmo == 0 ]]; then
-    IFS= read -r -d $'\x02' t <&"${HANDS[0]}"; rc=$?
-  else
-    IFS= read -r -t "$tmo" -d $'\x02' t <&"${HANDS[0]}"; rc=$?
-  fi
-  ((rc == 0)) || { ((rc > 128)) && return 73; return 71; }
-  [[ $t == "SENT $nonce "* ]] || return 72
+  # a block that never finishes is the one way an unattended run dies of nothing: no slip
+  # turns into a wall-clock bound, and the price is the shell state, which is honest.
+  local junk=0
+  while :; do
+    if [[ $tmo == 0 ]]; then
+      IFS= read -r -d $'\x02' t <&"${HANDS[0]}"; rc=$?
+    else
+      IFS= read -r -t "$tmo" -d $'\x02' t <&"${HANDS[0]}"; rc=$?
+    fi
+    ((rc == 0)) || { ((rc > 128)) && return 73; return 71; }
+    [[ $t == "SENT $nonce "* ]] && break
+    # not this block's slip: a stray byte, or something speaking in the harness's voice. Skip it
+    # and keep looking, so a payload cannot end the block by writing \x02 into the stream.
+    junk=$((junk + 1))
+    ((junk > 64)) && return 72
+  done
   read -r st sz <<<"${t#SENT $nonce }"
 
+  # the file is the authority on size, so a forged count is a disagreement, not a fact
+  bytes=$(command wc -c <"$raw")
+  if [[ $sz != "$bytes" ]]; then
+    boundary_lie="the slip said $sz bytes and the file holds $bytes"
+    return 74
+  fi
   head -c "$sz" "$raw" >"$chunk"
-  bytes=$(wc -c <"$chunk")
   return 0
 }
 
@@ -179,6 +203,15 @@ run_block() {          # $1 body, $2 a note to append after the status; prints, 
   exec_block "$(unfence "$1")" "${3-$block_timeout}"; rc=$?
   case $rc in
     0) ;;
+    74)
+      # the size in the slip is not the file's size: report the file and say the status is unproven
+      bytes=$(command wc -c <"$raw"); head -c "$bytes" "$raw" >"$chunk"; show
+      msg=$(printf 'Bash: [the boundary did not hold: %s; below is the file, and the status is the one the slip claimed, unproven]\n%s\n[status %s]' \
+        "$boundary_lie" "$body" "$st")
+      printf '%s\n' "$msg"
+      printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$(unfence "$1")" "$msg" >>"$traj"
+      restart_hands
+      return 0 ;;
     73)
       # the block is still running and the hands are the only thing holding it: kill them
       msg=$(printf '[this block ran longer than %ss and was killed, so the shell state it built is gone and a fresh bash is running]' "$block_timeout")
@@ -244,11 +277,18 @@ pending() {            # jobs with a pid and no status yet; counts them
 }
 
 drain() {              # waits out the jobs, one Job: message per job, and counts the waits
-  local c k
+  local c k rc
   while :; do
     (($(pending) > 0)) || return 0
     polls=$((polls + 1))
-    if ! exec_block 'bgwait' 0; then
+    exec_block 'bgwait' "$job_wait"; rc=$?
+    if ((rc == 73)); then
+      # a job that outlives the wait is not a reason to end an unattended run: say so, leave it
+      # pending, and let a later drain collect it
+      printf 'Job: [no job finished within %ss; %s still running]\n' "$job_wait" "$(pending)"
+      return 0
+    fi
+    if ((rc != 0 && rc != 74)); then
       # the hands are gone, so nothing can reap these jobs and their status is unknowable
       for c in "$AGENT_SH_JOBS"/*/; do
         [[ -f $c/pid && ! -f $c/status ]] || continue
@@ -269,8 +309,9 @@ drain() {              # waits out the jobs, one Job: message per job, and count
       printf 'Job: [%s job(s) could not be reaped; their status is unknown]\n' "$k"
       return 0
     fi
+    # the harness waited, not the model: the record carries the message and no invented block
     printf 'Job: %s\n' "$body"
-    printf '<|assistant|>\nbgwait\n<|user|>\nJob: %s\n' "$body" >>"$traj"
+    printf '<|user|>\nJob: %s\n' "$body" >>"$traj"
   done
 }
 
@@ -321,7 +362,7 @@ parse_traj() {         # fills mrole, mcontent, kept (messages to skip), sumtext
       compact) IFS= read -r -d '' a; kept=$a ;;
       meter)   IFS= read -r -d '' a ;;
     esac
-  done < <(awk '
+  done < <(awk -v cut="$cut_assistant" '
     function flush() {
       if (role == "") return
       sub(/\n$/, "", buf)
@@ -330,7 +371,9 @@ parse_traj() {         # fills mrole, mcontent, kept (messages to skip), sumtext
       buf = ""; role = ""
     }
     $0 == "<|assistant|>" || $0 == "<|user|>" {
-      flush(); role = ($0 == "<|user|>") ? "user" : "assistant"; buf = ""; next
+      flush()
+      if ($0 == "<|assistant|>" && cut > 0 && ++seen >= cut) { exit }
+      role = ($0 == "<|user|>") ? "user" : "assistant"; buf = ""; next
     }
     $0 == "<|summary|>" { flush(); role = "summary"; buf = ""; next }
     /^<\|meter\|>/   { flush(); printf "meter%c%s%c", 0, $0, 0; next }
@@ -373,10 +416,11 @@ complete() {           # $1 request, $2 response: the one place a network call c
 }
 
 turn() {               # request, block, trajectory, meter; 0 ok
-  local req=$sess/req.json res=$sess/res.json reply rc pt hit miss out
+  local req res reply rc pt hit miss out
   turn_i=$((turn_i + 1))
+  req=$sess/req.$turn_i.json
+  res=$sess/res.$turn_i.json
   build_request "$req"
-  cp "$req" "$sess/req.$turn_i.json"
   if ! complete "$req" "$res"; then
     printf 'agent.sh: turn %s: the request did not complete\n' "$turn_i" >&2; return 1
   fi
@@ -423,7 +467,8 @@ summary, not a block.'
 
 
 compact() {            # appends the command, then a compact record carrying the summary
-  local req=$sess/req.compact.json res=$sess/res.compact.json summary pt hit miss out before
+  local req=$sess/req.compact.$((compacts + 1)).json res=$sess/res.compact.$((compacts + 1)).json
+  local summary pt hit miss out before
   parse_traj; before=${#mrole[@]}
   build_request "$req" "$compact_cmd"
   complete "$req" "$res" || { printf 'agent.sh: compaction: the request did not complete\n' >&2; return 1; }
@@ -459,5 +504,17 @@ run_task() {
   printf -- '--- %s turns, %s polls, %s spent prompt tokens, session %s\n' \
     "$turn_i" "$polls" "$cum_pt" "$sess" >&2
 }
+
+# `--replay <session> <turn>`: rebuild what turn <turn> would have sent, from the trajectory
+# alone. It is how check-prefix proves the record and the requests are the same thing.
+if ((replay)); then
+  [[ -r $traj && $replay_turn =~ ^[1-9][0-9]*$ ]] || {
+    printf 'agent.sh: --replay needs a session with a trajectory and a turn number\n' >&2; exit 64; }
+  cut_assistant=$replay_turn
+  build_request "$sess/replay.json"
+  jq -S . "$sess/replay.json"
+  rm -f "$sess/replay.json"
+  exit 0
+fi
 
 if [[ -n $blocks_file ]]; then run_blocks; else run_task; fi

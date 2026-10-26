@@ -131,6 +131,19 @@ That keeps the one property everything else rests on: the file only grows, so a 
 - **The trigger is a token count, not a context overflow**: `--compact-at N` compacts when the last turn's `prompt_tokens` reached `N`. That is also how a demo can show compaction at 8k for pennies instead of waiting for a real window to fill.
 - **A request whose previous prompt is at or under one 1024-token chunk is reported as unverifiable**, not as passed: the arithmetic of "the prefix was found" needs a prefix larger than the smallest chunk the provider counts in.
 
+### D10. What the independent review found, and what it cost
+
+The review of the demo run (`P7`) returned pass-with-findings. The findings that changed the tree:
+
+1. **The slip was forgeable, and the docs said it was not.** A block runs inside the shell that reports the boundary, so it can shadow `printf`/`wc` and speak as the harness. The cheap defences are in now — the reporter calls `builtin printf` and `command wc`, and the size in the slip is only ever a cross-check against the file's own length, with a disagreement reported as `[the boundary did not hold: …]` instead of believed. The residual cannot be fixed without giving up the long-lived shell, so it is stated in `README.md` and not repeated as a guarantee: what the nonce buys is that no *accidental* output can pass for a slip, and what it does not buy is protection from a block that attacks its own reporter.
+2. **A job that never finished hung the run.** The drain waited with no bound. It now waits `AGENT_SH_JOB_WAIT` (600 s), then reports `Job: [no job finished within Ns; 1 still running]` and leaves the job for a later turn.
+3. **`check-prefix.sh` was unsound.** It judged only meter lines, granted exemptions from two self-asserting markers, and could not see an edited history. It now rebuilds every request from the trajectory with `agent.sh --replay` and demands the sent request back byte for byte before it looks at the cache arithmetic; the reviewer's own forgery (edit one `User:` line, meter untouched) now fails the check.
+4. **A stray `\x02` from the payload faked a death.** The slip reader now skips records that do not carry this block's nonce — up to 64 of them — so a payload byte cannot end a block, and `lost()` is only reached for a genuine gap in the stream.
+5. **The `Job:` message carried an invented turn.** `drain` used to append a `bgwait` assistant block the model never wrote. It now appends the `Job:` message alone, which is what actually happened: the harness waited, the model did not.
+6. **The record lost the responses.** Each turn now keeps `req.<n>.json` and `res.<n>.json`; compactions keep `req.compact.<k>.json` and `res.compact.<k>.json`.
+
+Not changed, and now stated rather than implied: the demo's `Job:` is a real job reaped by the harness's own drain, not the model's `bgwait`; `notes.md` says so where it points at the line.
+
 ## What is still open
 
 1. **Wake policy mid-turn.** Answered in `docs/roadmap.md` under `decide`, with its cost: a finished job ends the turn and arrives as its own `Job:` message.

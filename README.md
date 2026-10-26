@@ -28,7 +28,9 @@ bash agent.sh --task 'report the three largest files in this repo, with sizes' -
 
 Every agent framework answers "how does the model act?" by parsing its text for a tool call. This project deletes that question. The model's output *is* shell input, the shell already has files, jobs, pipes and state, and the only thing the harness has to solve is the boundary: knowing where a block ended and what its output was, when output arrives late from a background writer and the payload itself is untrusted bytes.
 
-That boundary is arithmetic, not a search. The block is transported as a nonce-delimited heredoc; the output goes to a file; the control pipe carries one slip, `SENT <nonce> <exit> <bytes>`, followed by `\x02`; the outer bash reads exactly `<bytes>` and checks the count. No payload can impersonate a slip, because matching it would require guessing the nonce.
+That boundary is arithmetic, not a search. The block is transported as a nonce-delimited heredoc; the output goes to a file; the control pipe carries one slip, `SENT <nonce> <exit> <bytes>`, followed by `\x02`; the outer bash reads the file's own length and only accepts a slip whose size matches it.
+
+So no *accidental* output can pass for a slip: the nonce is fresh per block and the size is checked against the file. A block that deliberately sets out to speak in the harness's voice can still do it — it runs inside the shell that reports the boundary, and no amount of care changes that; the size check is what turns the cheapest version into a loud disagreement instead of a silent lie. It is written down as a residual in [`docs/design.md`](docs/design.md) rather than left as a claim.
 
 ## What a turn looks like
 
@@ -67,7 +69,7 @@ Running. The loop is closed and honest about what it has proven:
 - landed: the boundary (nonce slip, byte count, arithmetic), truncation with the raw file named, binary refusal, the harness surviving a block that kills its hands, `bgrun`/`bgwait` over disk job state, a job outliving the model's turn and arriving as `Job:` with its note, the turn itself — completions call, reply executed as the block, meter line, resume that only ever appends — and a system prompt that teaches the protocol, since there is no tool list to teach it.
 - next: `/compact` as an appended message plus a rebuilt prompt, then one real unattended run committed under `runs/<date>-demo/`, then review by someone who did not write it.
 
-`bash test/run.sh` checks all of that with a stub model, free and deterministic — 39 invariants, including the one that matters most: `test/check-prefix.sh` reads a run's own `usage` lines and fails if the prompt cache stopped matching, so "the prefix never changes" is arithmetic rather than a promise. The live path is one thin `curl` behind it.
+`bash test/run.sh` checks all of that with a stub model, free and deterministic — every invariant it prints. The one that matters most is `test/check-prefix.sh`, which does two things per run: it rebuilds every request from the trajectory alone and demands the sent request back byte for byte, then reads the run's own `usage` lines and fails if the prompt cache stopped matching. So "the prefix never changes" is arithmetic over the record, not a promise. The live path is one thin `curl` behind it.
 
 The milestone, its four terms, the not-doing list and every decision taken with its cost are in [`docs/roadmap.md`](docs/roadmap.md). Whether the run is any good is the one judgement left to a reader.
 
@@ -89,7 +91,7 @@ Anyone who wants a sandboxed, multi-user or networked agent service, a Python or
 
 Requirements: bash 5.1+, coreutils, `iconv`, `jq`, and `curl` for the live path. No dependency file, no build step — `test/run.sh` is plain bash.
 
-A block is bounded at 300 s (`AGENT_SH_BLOCK_TIMEOUT`), because a block that reads stdin would otherwise hang an unattended run forever; the price is the shell state it built, and the message says so.
+A block is bounded at 300 s (`AGENT_SH_BLOCK_TIMEOUT`), because a block that reads stdin would otherwise hang an unattended run forever; the price is the shell state it built, and the message says so. The wait for a background job is bounded too (`AGENT_SH_JOB_WAIT`, 600 s): a job that outlives it is reported as still running and left for a later turn instead of ending the run.
 
 ## Licence
 
