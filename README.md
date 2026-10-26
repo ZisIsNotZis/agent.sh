@@ -83,7 +83,9 @@ for p in probes/*.sh; do bash "$p"; done
 
 Anyone who wants a sandboxed, multi-user or networked agent service, a Python or TUI harness, or a tool-call protocol. Nothing is sandboxed on purpose: the harness sits outside everything the model can reach, and the model's hands are the shell state itself.
 
-Requirements: bash 5.1+, coreutils, `iconv`. No dependency file, no build step — `test/run.sh` is plain bash.
+Requirements: bash 5.1+, coreutils, `iconv`, `jq`, and `curl` for the live path. No dependency file, no build step — `test/run.sh` is plain bash.
+
+A block is bounded at 300 s (`AGENT_SH_BLOCK_TIMEOUT`), because a block that reads stdin would otherwise hang an unattended run forever; the price is the shell state it built, and the message says so.
 
 ## Licence
 

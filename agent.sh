@@ -24,6 +24,7 @@ resume=''
 stub=''
 max_turns=8
 compact_at=0
+block_timeout=${AGENT_SH_BLOCK_TIMEOUT:-300}
 usage() { awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0" | grep -v '^SPDX-'; }
 
 while (($#)); do
@@ -99,7 +100,10 @@ export BASH_ENV=$sess/env.sh
 
 # --- the hands: a bash with no tty, in its own session, reachable only over the coproc ------
 start_hands() {
+  rm -f "$sess/hands.pid"
   coproc HANDS { exec setsid bash --norc --noprofile 2>&1; }
+  # `setsid` may fork, so the coproc's own pid is not the hands': have the hands say who it is
+  printf 'printf "%%s\n" "$$" >"%s"\n' "$sess/hands.pid" >&"${HANDS[1]}" 2>/dev/null
 }
 
 # --- one block: transport the text as data, then take the output by byte count --------------
@@ -108,8 +112,8 @@ execs=0  # every call into the hands, wake calls included
 # a session that already ran resumes its numbering, so no raw file is overwritten
 execs=$(find "$sess/raw" -name '*.raw' 2>/dev/null | wc -l)
 polls=0
-exec_block() {         # $1 body; sets raw chunk st bytes; 0 ok, 70 the write failed, 71 no slip, 72 desync
-  local body=$1 nonce d t sz
+exec_block() {         # $1 body, $2 seconds to wait (0 = forever); sets raw chunk st bytes
+  local body=$1 tmo=${2-$block_timeout} nonce d t sz rc
   execs=$((execs + 1))
   raw=$sess/raw/$execs.raw
   chunk=$sess/out/$execs.txt
@@ -119,7 +123,14 @@ exec_block() {         # $1 body; sets raw chunk st bytes; 0 ok, 70 the write fa
   printf "read -r -d '' __b <<'%s'\n%s\n%s\n" "$d" "$body" "$d" >&"${HANDS[1]}" 2>/dev/null || return 70
   printf '%s' "eval -- \"\$__b\" >\"$raw\" 2>&1; __s=\$?; __n=\$(wc -c <\"$raw\"); printf 'SENT $nonce %d %d\x02' \"\$__s\" \"\$__n\"
 " >&"${HANDS[1]}" 2>/dev/null || return 70
-  IFS= read -r -d $'\x02' t <&"${HANDS[0]}" || return 71
+  # a block that never finishes is the one way an unattended run dies of nothing: no slip
+  # turns into a wall-clock bound, and the price is the shell state, which is honest.
+  if [[ $tmo == 0 ]]; then
+    IFS= read -r -d $'\x02' t <&"${HANDS[0]}"; rc=$?
+  else
+    IFS= read -r -t "$tmo" -d $'\x02' t <&"${HANDS[0]}"; rc=$?
+  fi
+  ((rc == 0)) || { ((rc > 128)) && return 73; return 71; }
   [[ $t == "SENT $nonce "* ]] || return 72
   read -r st sz <<<"${t#SENT $nonce }"
 
@@ -165,9 +176,17 @@ unfence() {            # $1 body; prints the body to execute
 run_block() {          # $1 body, $2 a note to append after the status; prints, records
   local rc note=${2-}
   n=$((n + 1))
-  exec_block "$(unfence "$1")"; rc=$?
+  exec_block "$(unfence "$1")" "${3-$block_timeout}"; rc=$?
   case $rc in
     0) ;;
+    73)
+      # the block is still running and the hands are the only thing holding it: kill them
+      msg=$(printf '[this block ran longer than %ss and was killed, so the shell state it built is gone and a fresh bash is running]' "$block_timeout")
+      msg=$(printf 'Bash: %s\n[status 124]' "$msg")
+      printf '%s\n' "$msg"
+      printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$(unfence "$1")" "$msg" >>"$traj"
+      restart_hands
+      return 0 ;;
     70|71|72) return "$rc" ;;
     *) return 1 ;;
   esac
@@ -183,11 +202,24 @@ run_block() {          # $1 body, $2 a note to append after the status; prints, 
 }
 
 # a block that dies with its hands: say so once, and put fresh hands behind it
-lost() {
-  printf 'Bash: [the hands exited during this block, its output is lost, and a fresh bash is running]\n'
+restart_hands() {
+  # the hands lead their own session, so killing its process group takes the whole tree with
+  # it and nothing keeps a job's log open
+  local hp pg
+  hp=$(cat "$sess/hands.pid" 2>/dev/null)
+  if [[ -n $hp ]]; then
+    pg=$(ps -o pgid= -p "$hp" 2>/dev/null | tr -d ' ')
+    [[ -n $pg ]] && kill -- "-$pg" 2>/dev/null
+    kill "$hp" 2>/dev/null
+  fi
   [[ -n ${HANDS_PID-} ]] && kill "$HANDS_PID" 2>/dev/null
   wait "${HANDS_PID-}" 2>/dev/null
   start_hands
+}
+
+lost() {
+  printf 'Bash: [the hands exited during this block, its output is lost, and a fresh bash is running]\n'
+  restart_hands
 }
 
 start_hands
@@ -216,7 +248,7 @@ drain() {              # waits out the jobs, one Job: message per job, and count
   while :; do
     (($(pending) > 0)) || return 0
     polls=$((polls + 1))
-    if ! exec_block 'bgwait'; then
+    if ! exec_block 'bgwait' 0; then
       # the hands are gone, so nothing can reap these jobs and their status is unknowable
       for c in "$AGENT_SH_JOBS"/*/; do
         [[ -f $c/pid && ! -f $c/status ]] || continue

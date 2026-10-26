@@ -93,6 +93,22 @@ hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending
 wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
 hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
 
+# a block that never ends must not eat the run: it is bounded, and the harness survives it
+cat >"$work/stuck.sh" <<'BLOCKS'
+echo before-the-hang
+%%
+sleep 30; echo never
+%%
+echo after-the-hang
+BLOCKS
+AGENT_SH_BLOCK_TIMEOUT=1 AGENT_SH_SESSION_ROOT=$work/stuck bash agent.sh --blocks "$work/stuck.sh" \
+  >"$work/stuck.out" 2>&1
+hasin "$work/stuck.out" '[this block ran longer than 1s and was killed' \
+  'a block that never finishes is cut at the wall clock, with a status'
+hasin "$work/stuck.out" '[status 124]' 'the timeout reports itself as a status, not a silence'
+hasin "$work/stuck.out" 'after-the-hang' 'the harness is alive and serving after a timeout'
+hasntin "$work/stuck.out" 'never' 'the killed block produced nothing after the cut'
+
 # a fenced block would run twice, because backticks are a command substitution: it is unfenced
 cat >"$work/fence.sh" <<'BLOCKS'
 ```
