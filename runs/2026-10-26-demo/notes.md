@@ -22,6 +22,8 @@ bash check-prefix.sh  # rebuilds every request from traj.md, then checks the cac
 
 The work: `work/depsort`, an awk tool that reads `a b` pairs ("a needs b") from a file or stdin and prints one valid build order, `cycle: …` plus exit 1 on a cycle. `work/gen.sh` generates cases and `work/check.awk` is an independent oracle.
 
+`work/cases/` and `work/out/` are not committed: `gen.sh` and `run_cases.sh 300` regenerate them byte for byte, and the run's own 302-line output is kept in `session/raw/19.raw`.
+
 The interesting part is the middle of the trajectory, not the end: the first 300-case run **failed 11 of 300** (line 402, `exited 1`), the model read the failures, found two real defects — a generator that emitted one-field lines when `n == 1`, and an awk `END` block that overrode a malformed-line `exit 2` — fixed both, kept the broken versions as `depsort.pre-fix` and `gen.sh.pre-fix`, and re-ran: 300 of 300. That is why there are two `Job:` messages rather than one. Re-run by hand afterwards: `base/lib/app` in order, `cycle: a b a` with status 1 on a cycle, empty input exits 0.
 
 ## What it cost
