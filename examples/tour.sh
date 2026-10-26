@@ -9,3 +9,5 @@ echo 'the model keeps writing blocks while the job runs'
 bgwait
 %%
 for i in $(seq 1 150); do echo "line $i"; done
+%%
+bgrun -n 'a job that outlives the last block' sleep 1

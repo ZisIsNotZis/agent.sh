@@ -9,6 +9,7 @@
 # The boundary is arithmetic, not a search: the block's output goes to a file, and the control
 # pipe carries one slip `SENT <nonce> <exit> <bytes>` followed by \x02. Nothing in the payload
 # can impersonate a slip, and the byte count is a free integrity check.
+# SPDX-License-Identifier: AGPL-3.0-only — see LICENSE.
 
 set -u
 
@@ -60,7 +61,12 @@ bgwait() {
   done
   if [[ -n $d ]]; then
     printf '%s\n' "$st" >"$d/status"
-    printf 'job %s exited %s\n' "$(basename "$d")" "$st"
+    note=$(cat "$d/note" 2>/dev/null)
+    if [[ -n $note ]]; then
+      printf 'job %s exited %s — note: %s\n' "$(basename "$d")" "$st" "$note"
+    else
+      printf 'job %s exited %s\n' "$(basename "$d")" "$st"
+    fi
   else
     printf 'pid %s exited %s\n' "$pid" "$st"
   fi
@@ -76,12 +82,14 @@ start_hands() {
 }
 
 # --- one block: transport the text as data, then take the output by byte count --------------
-n=0
-run_block() {          # $1 body; sets msg; returns 0 ok, 70 the write failed, 71 no slip, 72 desync
-  local body=$1 nonce d t st sz raw chunk bytes total nul
-  n=$((n + 1))
-  raw=$sess/raw/$n.raw
-  chunk=$sess/out/$n.txt
+n=0      # blocks the model wrote
+execs=0  # every call into the hands, wake calls included
+polls=0
+exec_block() {         # $1 body; sets raw chunk st bytes; 0 ok, 70 the write failed, 71 no slip, 72 desync
+  local body=$1 nonce d t sz
+  execs=$((execs + 1))
+  raw=$sess/raw/$execs.raw
+  chunk=$sess/out/$execs.txt
   nonce=$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')
   d="__AGENT_${nonce}__"
 
@@ -94,43 +102,103 @@ run_block() {          # $1 body; sets msg; returns 0 ok, 70 the write failed, 7
 
   head -c "$sz" "$raw" >"$chunk"
   bytes=$(wc -c <"$chunk")
+  return 0
+}
+
+# what the hands printed, in the form the model reads: the window, and the refusal of bytes
+show() {               # sets body
+  local nul total
   nul=$(( bytes - $(tr -d '\0' <"$chunk" | wc -c) ))
   if ((nul > 0)) || ! iconv -f UTF-8 -t UTF-8 "$chunk" >/dev/null 2>&1; then
-    msg=$(printf 'Bash: [binary output, %s bytes, not shown]' "$bytes")
+    body=$(printf '[binary output, %s bytes, not shown]' "$bytes")
   else
     total=$(wc -l <"$chunk")
     if ((total > lines_max)); then
-      msg=$(printf 'Bash: [truncated: total %s lines, showing last %s; full output at %s]\n%s' \
+      body=$(printf '[truncated: total %s lines, showing last %s; full output at %s]\n%s' \
         "$total" "$lines_max" "$raw" "$(tail -n "$lines_max" "$chunk")")
     elif ((bytes == 0)); then
-      msg='Bash:'
+      body=''
     else
-      msg=$(printf 'Bash: %s' "$(cat "$chunk")")
+      body=$(cat "$chunk")
     fi
   fi
-  msg+=$(printf '\n[status %s]' "$st")
+}
 
+run_block() {          # $1 body; prints the message and appends both sides to the trajectory
+  local rc
+  n=$((n + 1))
+  exec_block "$1"; rc=$?
+  case $rc in
+    0) ;;
+    70|71|72) return "$rc" ;;
+    *) return 1 ;;
+  esac
+  show
+  if [[ -n $body ]]; then msg=$(printf 'Bash: %s' "$body"); else msg='Bash:'; fi
+  msg+=$(printf '\n[status %s]' "$st")
   printf '%s\n' "$msg"
-  printf '<|assistant|>\n%s<|user|>\n%s\n' "$body" "$msg" >>"$traj"
+  printf '<|assistant|>\n%s<|user|>\n%s\n' "$1" "$msg" >>"$traj"
   return 0
+}
+
+# a block that dies with its hands: say so once, and put fresh hands behind it
+lost() {
+  printf 'Bash: [the hands exited during this block, its output is lost, and a fresh bash is running]\n'
+  [[ -n ${HANDS_PID-} ]] && kill "$HANDS_PID" 2>/dev/null
+  wait "${HANDS_PID-}" 2>/dev/null
+  start_hands
 }
 
 start_hands
 block=''
 
-deliver() {            # $1 body
+deliver() {            # $1 body; 1 when the hands had to be replaced
   local rc
   run_block "$1"; rc=$?
-  case $rc in
-    0) return 0 ;;
-    70|71|72)
-      printf 'Bash: [the hands exited during this block, its output is lost, and a fresh bash is running]\n'
-      [[ -n ${HANDS_PID-} ]] && kill "$HANDS_PID" 2>/dev/null
-      wait "${HANDS_PID-}" 2>/dev/null
-      start_hands
-      return 1 ;;
-    *) return 1 ;;
-  esac
+  ((rc == 0)) && return 0
+  lost
+  return 1
+}
+
+# --- the wake: a finished job is a turn of its own, and no job pending means no poll -------
+pending() {            # jobs with a pid and no status yet; counts them
+  local c k=0
+  for c in "$AGENT_SH_JOBS"/*/; do
+    [[ -f $c/pid && ! -f $c/status ]] || continue
+    k=$((k + 1))
+  done
+  printf '%s' "$k"
+}
+
+drain() {              # waits out the jobs, one Job: message per job, and counts the waits
+  local c k
+  while :; do
+    (($(pending) > 0)) || return 0
+    polls=$((polls + 1))
+    if ! exec_block 'bgwait'; then
+      # the hands are gone, so nothing can reap these jobs and their status is unknowable
+      for c in "$AGENT_SH_JOBS"/*/; do
+        [[ -f $c/pid && ! -f $c/status ]] || continue
+        printf 'lost\n' >"$c/status"
+      done
+      lost
+      printf 'Job: [the hands exited while jobs were pending; their status is unknown]\n'
+      return 1
+    fi
+    show
+    if [[ $body == 'no jobs pending' ]]; then
+      # a job whose pid outlived its shell can never be reaped: record that, rather than poll on
+      k=$(pending)
+      for c in "$AGENT_SH_JOBS"/*/; do
+        [[ -f $c/pid && ! -f $c/status ]] || continue
+        printf 'lost\n' >"$c/status"
+      done
+      printf 'Job: [%s job(s) could not be reaped; their status is unknown]\n' "$k"
+      return 0
+    fi
+    printf 'Job: %s\n' "$body"
+    printf '<|assistant|>\nbgwait\n<|user|>\nJob: %s\n' "$body" >>"$traj"
+  done
 }
 
 while IFS= read -r line || [[ -n $line ]]; do
@@ -142,4 +210,7 @@ while IFS= read -r line || [[ -n $line ]]; do
 done <"$blocks_file"
 [[ -n $block ]] && deliver "$block"
 
-printf -- '--- %s blocks, session %s\n' "$n" "$sess" >&2
+# the file was the model, so the model has stopped writing: what is left is the jobs
+(( $(pending) > 0 )) && drain
+
+printf -- '--- %s blocks, %s polls, session %s\n' "$n" "$polls" "$sess" >&2

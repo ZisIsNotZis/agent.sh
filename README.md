@@ -1,39 +1,81 @@
 # agent.sh
 
-An agent that is given no tools.
-What the model writes is not searched for tool calls: it is handed to one long-lived bash and executed, and what that bash printed comes back to the model as the next message.
-The harness is the outer bash — it owns the API call, the trajectory, the labels and the truncation — and its hands are a `setsid bash` with no tty, reached over a `coproc`.
-Two pipes carry only control: block text in, and a slip carrying `{nonce, exit status, byte count}` out, while the output itself sits in a file the outer reads by byte count.
-That arithmetic boundary is the one idea here, and the project exists to see how far an agent gets with nothing else.
-The deliverable is a trajectory from a real unsupervised run, not a feature list.
+[![licence: AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-blue.svg)](LICENSE)
 
-**Not for** anyone who wants a sandboxed, multi-user or networked agent service, or a Python/TUI harness.
-Nothing is sandboxed on purpose: the harness sits outside everything the model can reach, and the model's hands are the shell state itself — `cd`, env, `&`, `wait -n -p`.
-Two shell functions are injected through `BASH_ENV` (`bgrun`, `bgwait`) and nothing else is.
+**An agent with no tools.** The model is never asked to produce a tool call: whatever it writes is handed to one long-lived bash and executed, and what that bash printed comes back to it as the next message. Two shell functions are injected; nothing else is.
+
+The harness is the outer bash — it owns the API call, the trajectory, the labels, the truncation — and its hands are a `setsid bash` with no tty, reached over a `coproc`.
+
+```sh
+git clone https://github.com/ZisIsNotZis/agent.sh
+cd agent.sh
+bash test/run.sh                                   # the invariants, no API call, under a second
+bash agent.sh --blocks examples/tour.sh            # the harness with the model's place taken by a file
+```
+
+Read `.session/<stamp>-<pid>/traj.md` afterwards: that is the conversation, turn by turn, in exactly the shape a model would have read.
+
+## Why
+
+Every agent framework answers "how does the model act?" by parsing its text for a tool call. This project deletes that question. The model's output *is* shell input, the shell already has files, jobs, pipes and state, and the only thing the harness has to solve is the boundary: knowing where a block ended and what its output was, when output arrives late from a background writer and the payload itself is untrusted bytes.
+
+That boundary is arithmetic, not a search. The block is transported as a nonce-delimited heredoc; the output goes to a file; the control pipe carries one slip, `SENT <nonce> <exit> <bytes>`, followed by `\x02`; the outer bash reads exactly `<bytes>` and checks the count. No payload can impersonate a slip, because matching it would require guessing the nonce.
+
+## What a turn looks like
+
+`Bash:` starts every message from the hands, `[status N]` ends it, and each block's text is recorded beside its reply in the trajectory.
+
+```
+Bash: job 1 started, pid 2484919, log /…/jobs/1/log
+[status 0]
+Bash: the model keeps writing blocks while the job runs
+[status 0]
+Bash: job 1 exited 0
+[status 0]
+Bash: [truncated: total 150 lines, showing last 100; full output at /…/raw/6.raw]
+line 51
+…
+[status 0]
+```
+
+Long output is truncated to the last `--lines N` (default 100) and the header names the block's own raw file, which the model pages with `sed -n` — the full output is never copied and never re-sent.
+
+## The two functions
+
+The hands get `BASH_ENV` and, through it, exactly two functions. Everything else is the shell it already is: `cd`, env, `&`, `wait -n -p`, files.
+
+| function | what it does |
+|---|---|
+| `bgrun [-n note] cmd…` | starts `cmd` in the background, writes job state under `$AGENT_SH_JOBS/<seq>/` (`cmd`, `pid`, `note`, `log`), and returns at once |
+| `bgwait` | reaps one finished job with `wait -n -p`, records its exit status, prints `job <seq> exited <status>` — `127` and `no jobs pending` when nothing is running |
+
+A finished job starts a new turn rather than being spliced into a block still being read, so a trajectory stays readable in order, at the price of one round trip.
 
 ## Status
 
-Owned by a manager since 2026-10-23; the roadmap is `docs/roadmap.md` and one milestone is running.
-The boundary loop is in and green: `agent.sh` executes blocks and returns them labelled, with `bash test/run.sh` passing seventeen invariants on a scripted input, so no API is called yet and no real trajectory exists.
-The design was settled with the person on 2026-10-22 and lives in `docs/design.md`.
-No licence and no unattended run yet — the roadmap names both, the second as the milestone.
+Running, and the harness is honest about where it is: **v0 makes no API call yet**. `--blocks <file>` puts a file where the model's output would go, which is why `test/run.sh` can check every invariant here for free.
 
-## How to start
+- landed: the boundary loop, truncation, binary refusal, the harness surviving a block that kills its hands, `bgrun`/`bgwait` over disk job state, and a job that outlives the model's turn arriving as a `Job:` message carrying its note — `test/run.sh` covers it.
+- next: the turn (completions call, trajectory appended, meter line, resume), the system prompt, `/compact`, then one real unattended run whose trajectory is the actual deliverable.
 
+The milestone, its four terms, the not-doing list and every decision taken with its cost are in [`docs/roadmap.md`](docs/roadmap.md). Whether the run is any good is the one judgement left to a reader.
+
+## Design, and what it cost
+
+[`docs/design.md`](docs/design.md) records the settled design and every branch that lost, with the measurement that killed it; [`probes/`](probes/) re-runs those measurements in about a minute, including the two that are supposed to fail.
+
+```sh
+for p in probes/*.sh; do bash "$p"; done
 ```
-bash agent.sh --blocks examples/tour.sh
-```
 
-That is the harness with the model's place taken by a file: each block runs in one long-lived bash and comes back as the message a model would read.
-Then read `AGENTS.md` for what this directory is and how it is held, and `docs/roadmap.md` for what is being built and what checks it off.
-`docs/design.md` is the record of the design and of every branch that lost, with the measurement that killed it.
+## Not for
 
-## How to continue
+Anyone who wants a sandboxed, multi-user or networked agent service, a Python or TUI harness, or a tool-call protocol. Nothing is sandboxed on purpose: the harness sits outside everything the model can reach, and the model's hands are the shell state itself.
 
-Take the next open package in `docs/roadmap.md` whose dependencies are landed, and write its status back into that table in the same change that lands it.
-Messages to this project land in `inbox/`; the roadmap owns the milestone, so nothing else may hold it.
+Requirements: bash 5.1+, coreutils, `iconv`. No dependency file, no build step — `test/run.sh` is plain bash.
 
-## Limits
+## Licence
 
-- Splitting and dispatching are the manager's; the workspace law applies as it does to every other project.
-- The design record is dated 2026-10-22 and cites probes under `probes/`; if a probe no longer runs, the claim it supports is stale rather than wrong.
+AGPL-3.0-only. See [`LICENSE`](LICENSE).
+
+Copyright (C) 2026 ZisIsNotZis.

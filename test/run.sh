@@ -69,5 +69,29 @@ else
   printf 'FAIL the trajectory is missing or one-sided\n'; fail=1
 fi
 
+# the wake: the file has stopped writing, one job is still running, and that job gets a turn
+cat >"$work/wake.sh" <<'BLOCKS'
+bgrun -n 'a slow build' sh -c 'sleep 0.4; echo built'
+%%
+echo the model keeps writing while the job runs
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/wake bash agent.sh --blocks "$work/wake.sh" \
+  >"$work/wake.out" 2>"$work/wake.err"
+
+hasin(){ if grep -qF -- "$2" "$1"; then printf 'ok   %s\n' "$3"; else printf 'FAIL %s  (no %q in %s)\n' "$3" "$2" "$1"; fail=1; fi; }
+hasntin(){ if grep -qF -- "$2" "$1"; then printf 'FAIL %s  (found %q in %s)\n' "$3" "$2" "$1"; fail=1; else printf 'ok   %s\n' "$3"; fi; }
+
+hasin "$work/wake.out" 'Job: job 1 exited 0 — note: a slow build' \
+  'a job left running gets a Job: turn of its own, carrying its note'
+hasin "$work/wake.out" 'Bash: the model keeps writing while the job runs' \
+  'the model kept writing in between'
+hasntin "$work/wake.out" 'Bash: job 1 exited' \
+  'the wake is labelled Job:, never Bash:'
+hasin "$work/wake.err" '2 blocks, 1 polls' 'one wait for one pending job'
+hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending sleeps zero times'
+
+wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
+hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
+
 ((fail == 0)) && printf '\nall invariants hold\n' || printf '\nsomething above failed\n'
 exit "$fail"

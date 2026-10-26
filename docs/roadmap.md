@@ -42,7 +42,7 @@ Every package runs on idle machine time unless it is marked as spending metered 
 | # | package | waits on | status | what checks it off |
 |---|---|---|---|---|
 | P1 | the boundary loop with scripted input: blocks from a file through the `coproc`, slip by nonce, output by byte count, binary alarm, truncation to the session dir, labelled `Bash:` message, harness surviving the hands dying | — | done, `agent.sh` + `test/run.sh` | `bash test/run.sh` exits 0 |
-| P2 | the hands' env: `BASH_ENV` carrying `bgrun`/`bgwait`, job state on disk, the note that rides the wake line, no polling when no job is pending | P1 | open | `bash test/run.sh` covers `bgrun` in one block reaped by `bgwait` in the next, and a session with no jobs sleeps zero times (counter printed) |
+| P2 | the hands' env: `BASH_ENV` carrying `bgrun`/`bgwait`, job state on disk, the note that rides the wake line, no polling when no job is pending | P1 | done, `agent.sh` + `test/run.sh` | `bash test/run.sh` covers `bgrun` in one block reaped by `bgwait` in the next, a job left running arriving as a `Job:` turn with its note, and `0 polls` in a session with no job pending (the counter is on the epilogue line) |
 | P3 | the turn: completions call, trajectory appended in chat-ml, the meter line per turn, resume from the trajectory | P1, P2 | open (spends metered) | a two-turn run whose trajectory resumes byte-identically after a kill, and whose meter line carries `prompt_cache_hit_tokens` |
 | P4 | the prompt: system prompt carrying the harness documentation the model has no tool list to learn from, and the `User:`/`Bash:`/`Job:` protocol | P2 | open | the system prompt file is greppable for the three labels and for `bgrun`/`bgwait`, and contains no tool schema |
 | P5 | `/compact` as an appended message plus rebuild, and prefix stability across it | P3 | open (spends metered) | `check-prefix.sh` reports one boundary, and after it the hit/miss ratio returns to the pre-compaction shape |
@@ -58,7 +58,8 @@ The four questions `docs/design.md` left open are answered here.
    Cost of the assumption: one extra round trip per job completion, and the model sees a job's result one turn later than it could.
    Bought: no ambiguity about which block a result belongs to, and a trajectory that reads in order.
 2. **The poll ships in v0.** Without it a turn that ends with jobs pending sleeps until the person types, which would make the async-arrival claim untestable in the demo.
-   Cost: about fifteen lines of `read -t` loop in the one place polling is allowed, outside the model's turn.
+   Cost: about fifteen lines of loop in the one place polling is allowed, outside the model's turn — it landed as the `drain`, counted on the epilogue line as `polls`.
+   As landed in v0 the wait is the hands' own `bgwait`, not a `read -t` tick over stdin: the blocks driver has no stdin to read, so a tick would have nothing to wake on. The tick form returns with P3, where a tty and a person exist.
 3. **Truncation window is `--lines N`, default 100, and the full output is never copied.** The block's own raw file is the overflow file, so the header points at `$SESSION/raw/<n>.raw` and the model pages it with `sed -n`.
    Cost: the path leaks a session directory name into the conversation.
 4. **`[status N]` is reported on every block, including a comment-only one.** It is the block's own `eval` status, so it is never a leftover.
