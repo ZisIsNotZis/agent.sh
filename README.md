@@ -9,11 +9,20 @@ The harness is the outer bash — it owns the API call, the trajectory, the labe
 ```sh
 git clone https://github.com/ZisIsNotZis/agent.sh
 cd agent.sh
-bash test/run.sh                                   # the invariants, no API call, under a second
+bash test/run.sh                                   # every invariant, no API call, under two seconds
 bash agent.sh --blocks examples/tour.sh            # the harness with the model's place taken by a file
 ```
 
 Read `.session/<stamp>-<pid>/traj.md` afterwards: that is the conversation, turn by turn, in exactly the shape a model would have read.
+
+To let a real model drive it — `deepseek-flash` at `reasoning_effort: low` by default, about 800 prompt tokens per turn, so this costs a fraction of a cent:
+
+```sh
+export DEEPSEEK_API_KEY=…                          # deepseek.com; the completions API, no other key
+bash agent.sh --task 'report the three largest files in this repo, with sizes' --max-turns 6
+```
+
+`--session DIR` pins where the run writes, `--resume` continues an existing session, `--lines N` sets the truncation window, and `--stub FILE` replaces the API with a script for a free, deterministic run (that is what `test/run.sh` uses). Every turn appends a `<|meter|>` line to the trajectory with `prompt`, `hit`, `miss`, `out` and the running total, and prints the same line to stderr.
 
 ## Why
 
@@ -53,10 +62,12 @@ A finished job starts a new turn rather than being spliced into a block still be
 
 ## Status
 
-Running, and the harness is honest about where it is: **v0 makes no API call yet**. `--blocks <file>` puts a file where the model's output would go, which is why `test/run.sh` can check every invariant here for free.
+Running. The loop is closed and honest about what it has proven:
 
-- landed: the boundary loop, truncation, binary refusal, the harness surviving a block that kills its hands, `bgrun`/`bgwait` over disk job state, and a job that outlives the model's turn arriving as a `Job:` message carrying its note — `test/run.sh` covers it.
-- next: the turn (completions call, trajectory appended, meter line, resume), the system prompt, `/compact`, then one real unattended run whose trajectory is the actual deliverable.
+- landed: the boundary (nonce slip, byte count, arithmetic), truncation with the raw file named, binary refusal, the harness surviving a block that kills its hands, `bgrun`/`bgwait` over disk job state, a job outliving the model's turn and arriving as `Job:` with its note, the turn itself — completions call, reply executed as the block, meter line, resume that only ever appends — and a system prompt that teaches the protocol, since there is no tool list to teach it.
+- next: `/compact` as an appended message plus a rebuilt prompt, then one real unattended run committed under `runs/<date>-demo/`, then review by someone who did not write it.
+
+`bash test/run.sh` checks all of that with a stub model, free and deterministic. The live path is one thin `curl` behind it.
 
 The milestone, its four terms, the not-doing list and every decision taken with its cost are in [`docs/roadmap.md`](docs/roadmap.md). Whether the run is any good is the one judgement left to a reader.
 

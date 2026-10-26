@@ -112,11 +112,19 @@ Known leak: a subagent's own hands shell also sources it. Keep the file stateles
 
 Trajectory file is the state. One block = one assistant message, one chunk = one user message, both appended as text with the chat-ml markers. Resume re-reads the file. The outer additionally keeps `PWD` so a restarted hands shell lands where the last one was working.
 
+### D8. The turn, as landed
+
+- **Markers, and only three.** `<|assistant|>` then the block verbatim, `<|user|>` then one message, and a `<|meter|>` line after each turn. A meter line lives in the trajectory rather than beside it because the milestone asks for a meter line on every turn of the trajectory, and because the totals must survive a resume; resume skips it, so it is a record, not protocol.
+- **Resume parses the trajectory itself**, so there is one home for the conversation. The parser reads NUL-separated `(role, content)` pairs out of the file, which is safe exactly because binary output is refused — a NUL can never reach a recorded body. No second store, no index, no JSONL sidecar.
+- **JSON lives only at the request boundary**, built by `jq` from the trajectory and the prompt file and parsed by `jq` back: the record stays text, and `jq` is a dependency the workspace already allows. Each turn's request is kept as `req.<n>.json` beside its response, because a claim about prefix stability should be checkable against what was actually sent, not against the code that built it.
+- **`--stub` is the model-in-a-file for the turn**, the same idea the blocks driver already uses: a script that reads the request and writes a response. Every invariant of the loop, the meter and resume is checked with it for free, and `complete()` is the one function where a network call can happen.
+- **The reply is executed raw.** No fence stripping, no `$ ` trimming, no prose detection: the design says the model's text *is* the block, so a model that writes prose gets prose executed and learns from the error — which is the experiment.
+
 ## What is still open
 
-1. **Wake policy mid-turn.** Does a finished job get injected into the *current* block's chunk, or does it always end the turn and start a new one? The first saves round-trips; the second is simpler and matches the transcript he drew. Unanswered — this is a design choice, not a detail, because it decides what the model sees while it is still working.
-2. **Does the outer poll ship in v0 at all?** The settled design keeps it; his fallback was "cancel async entirely and use blocking `bgwait`". Without the poll, a turn that ends with jobs pending sleeps until the person types. Cheap to include (about fifteen lines), but it is scope he may not want in a first slice.
-3. **Truncation window and the `[status N]` line.** The transcript shows "last 100 lines". Unsettled: whether the window is configurable, and whether a comment-only block reports a status at all (it currently reports the harness's own leftover `$?`, which is meaningless).
+1. **Wake policy mid-turn.** Answered in `docs/roadmap.md` under `decide`, with its cost: a finished job ends the turn and arrives as its own `Job:` message.
+2. **Does the outer poll ship in v0 at all?** Answered there too: it ships, as `drain`, counted on the epilogue line.
+3. **Truncation window and the `[status N]` line.** Answered there: `--lines N`, default 100, and the status of every block including a comment-only one.
 4. **Degree for this project.** Closed by `inbox/2026-10-22-manager-brief.md`: it runs at `decide`, because he wants to see how good an agent is without his supervising. The register carries `level: decide` and `model_work: deepseek-flash`; the first three questions above are now the manager's to answer, not his.
 
 Also unsettled, manager-sized rather than person-sized: the content of the role files (`root`/`manager`/`researcher`/`worker`/`reviewer`), the recursion budget for `bgrun agent.sh`, and whether a subagent's trajectory lives under the session dir or under a directory per child.

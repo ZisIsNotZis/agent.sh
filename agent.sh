@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # agent.sh — an agent with no tools: what the model writes is executed by one long-lived bash.
 #
-# v0 driver, which makes no API call: `bash agent.sh --blocks <file> [--lines N]`.
-# Blocks in <file> are separated by a line containing exactly `%%`, and each block's text
-# stands in for what the model would have written. What comes back is the message a model
-# would read: `Bash: ` at the front and `[status N]` at the end.
+# Two drivers, and the same hands behind both.
+#   bash agent.sh --task '<text>' [--session DIR] [--max-turns N] [--lines N] [--stub FILE]
+#     the real one: one completions request per turn, the reply executed as the block, the
+#     trajectory appended, a meter line per turn. `--resume` continues an existing session.
+#   bash agent.sh --blocks <file> [--lines N]
+#     the free one, which makes no API call: blocks separated by a line holding exactly `%%`
+#     stand in for what the model would have written.
 #
 # The boundary is arithmetic, not a search: the block's output goes to a file, and the control
 # pipe carries one slip `SENT <nonce> <exit> <bytes>` followed by \x02. Nothing in the payload
@@ -15,20 +18,35 @@ set -u
 
 lines_max=100
 blocks_file=''
+task=''
+sess=''
+resume=''
+stub=''
+max_turns=8
+usage() { awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0" | grep -v '^SPDX-'; }
 
 while (($#)); do
   case $1 in
     --blocks) blocks_file=${2-}; shift 2 ;;
     --lines)  lines_max=${2-};   shift 2 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --task)   task=${2-};        shift 2 ;;
+    --session) sess=${2-};       shift 2 ;;
+    --resume) resume=1;          shift ;;
+    --max-turns) max_turns=${2-}; shift 2 ;;
+    --stub)   stub=${2-};        shift 2 ;;
+    -h|--help) usage; exit 0 ;;
     *) printf 'agent.sh: unknown argument %s\n' "$1" >&2; exit 64 ;;
   esac
 done
-[[ -n $blocks_file ]] || { printf 'agent.sh: --blocks <file> is required in v0\n' >&2; exit 64; }
-[[ -r $blocks_file ]] || { printf 'agent.sh: cannot read %s\n' "$blocks_file" >&2; exit 66; }
+if [[ -n $blocks_file ]]; then task=''; fi
+if [[ -z $blocks_file && -z ${task-} && -z ${resume-} ]]; then
+  printf 'agent.sh: --blocks <file>, --task <text> or --resume is required\n' >&2; exit 64
+fi
+[[ -z $blocks_file || -r $blocks_file ]] || { printf 'agent.sh: cannot read %s\n' "$blocks_file" >&2; exit 66; }
 [[ $lines_max =~ ^[0-9]+$ ]] || { printf 'agent.sh: --lines takes a number\n' >&2; exit 64; }
+[[ $max_turns =~ ^[0-9]+$ ]] || { printf 'agent.sh: --max-turns takes a number\n' >&2; exit 64; }
 
-sess=${AGENT_SH_SESSION_ROOT:-$PWD/.session}/$(date -u +%Y%m%dT%H%M%SZ)-$$
+sess=${sess:-${AGENT_SH_SESSION_ROOT:-$PWD/.session}/$(date -u +%Y%m%dT%H%M%SZ)-$$}
 mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" || exit 73
 traj=$sess/traj.md
 export AGENT_SH_SESSION=$sess AGENT_SH_JOBS=$sess/jobs
@@ -84,6 +102,8 @@ start_hands() {
 # --- one block: transport the text as data, then take the output by byte count --------------
 n=0      # blocks the model wrote
 execs=0  # every call into the hands, wake calls included
+# a session that already ran resumes its numbering, so no raw file is overwritten
+execs=$(find "$sess/raw" -name '*.raw' 2>/dev/null | wc -l)
 polls=0
 exec_block() {         # $1 body; sets raw chunk st bytes; 0 ok, 70 the write failed, 71 no slip, 72 desync
   local body=$1 nonce d t sz
@@ -137,7 +157,9 @@ run_block() {          # $1 body; prints the message and appends both sides to t
   if [[ -n $body ]]; then msg=$(printf 'Bash: %s' "$body"); else msg='Bash:'; fi
   msg+=$(printf '\n[status %s]' "$st")
   printf '%s\n' "$msg"
-  printf '<|assistant|>\n%s<|user|>\n%s\n' "$1" "$msg" >>"$traj"
+  # the record keeps one newline between the block and the reply, whatever the block's tail
+  local rec=${1%$'\n'}; rec=${rec%$'\n'}
+  printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$rec" "$msg" >>"$traj"
   return 0
 }
 
@@ -201,16 +223,109 @@ drain() {              # waits out the jobs, one Job: message per job, and count
   done
 }
 
-while IFS= read -r line || [[ -n $line ]]; do
-  if [[ $line == '%%' ]]; then
-    deliver "$block"; block=''
+run_blocks() {
+  local line
+  while IFS= read -r line || [[ -n $line ]]; do
+    if [[ $line == '%%' ]]; then
+      deliver "$block"; block=''
+    else
+      block+=$line$'\n'
+    fi
+  done <"$blocks_file"
+  [[ -n $block ]] && deliver "$block"
+  # the file was the model, so the model has stopped writing: what is left is the jobs
+  (($(pending) > 0)) && drain
+  printf -- '--- %s blocks, %s polls, session %s\n' "$n" "$polls" "$sess" >&2
+}
+
+# --- the turn: one completions request, its reply executed as this turn's block ------------
+api=${AGENT_SH_API:-https://api.deepseek.com/chat/completions}
+model=${AGENT_SH_MODEL:-deepseek-flash}
+effort=${AGENT_SH_EFFORT:-low}
+max_tokens=${AGENT_SH_MAX_TOKENS:-4096}
+prompt_file=${AGENT_SH_PROMPT:-$(dirname "$0")/prompt/system.md}
+# a resumed session keeps its totals, taken from the meter lines it already carries
+read -r cum_pt cum_hit cum_miss cum_out < <(awk '
+  /^<\|meter\|> / { for (i = 1; i <= NF; i++) if ($i ~ /^(prompt|hit|miss|out)=/) {
+    split($i, kv, "="); s[kv[1]] += kv[2] } }
+  END { printf "%d %d %d %d\n", s["prompt"], s["hit"], s["miss"], s["out"] }' "$traj" 2>/dev/null)
+cum_pt=${cum_pt:-0}; cum_hit=${cum_hit:-0}; cum_miss=${cum_miss:-0}; cum_out=${cum_out:-0}
+turn_i=$(grep -c '^<|meter|>' "$traj" 2>/dev/null || true)
+
+[[ -r $prompt_file ]] || { printf 'agent.sh: no system prompt at %s\n' "$prompt_file" >&2; exit 66; }
+
+traj_msgs() {          # the trajectory as NUL-separated (role, content) pairs
+  awk '
+    function emit() { sub(/\n$/, "", buf); printf "%s%c%s%c", role, 0, buf, 0 }
+    $0 == "<|assistant|>" || $0 == "<|user|>" {
+      if (role != "") emit()
+      role = ($0 == "<|user|>") ? "user" : "assistant"; buf = ""; next
+    }
+    { buf = buf $0 "\n" }
+    END { if (role != "") emit() }
+  ' "$traj"
+}
+
+build_request() {      # $1 out file: system prompt, then every message, verbatim
+  local out=$1 role content
+  : >"$sess/msgs.jsonl"
+  jq -cn --rawfile c "$prompt_file" '{role:"system",content:$c}' >>"$sess/msgs.jsonl"
+  while IFS= read -r -d '' role && IFS= read -r -d '' content; do
+    jq -cn --arg r "$role" --arg c "$content" '{role:$r,content:$c}' >>"$sess/msgs.jsonl"
+  done < <(traj_msgs)
+  jq -s --arg model "$model" --arg effort "$effort" --argjson max "$max_tokens" \
+    '{model:$model, reasoning_effort:$effort, max_tokens:$max, messages:.}' \
+    "$sess/msgs.jsonl" >"$out"
+}
+
+complete() {           # $1 request, $2 response: the one place a network call can happen
+  if [[ -n $stub ]]; then
+    bash "$stub" "$1" "$2"
   else
-    block+=$line$'\n'
+    curl -sS --max-time 600 "$api" \
+      -H "Authorization: Bearer ${DEEPSEEK_API_KEY-}" \
+      -H 'Content-Type: application/json' \
+      --data-binary @"$1" -o "$2"
   fi
-done <"$blocks_file"
-[[ -n $block ]] && deliver "$block"
+}
 
-# the file was the model, so the model has stopped writing: what is left is the jobs
-(( $(pending) > 0 )) && drain
+turn() {               # request, block, trajectory, meter; 0 ok
+  local req=$sess/req.json res=$sess/res.json reply rc pt hit miss out
+  turn_i=$((turn_i + 1))
+  build_request "$req"
+  cp "$req" "$sess/req.$turn_i.json"
+  if ! complete "$req" "$res"; then
+    printf 'agent.sh: turn %s: the request did not complete\n' "$turn_i" >&2; return 1
+  fi
+  if [[ $(jq -r 'has("error")' "$res" 2>/dev/null) == true ]]; then
+    printf 'agent.sh: turn %s: %s\n' "$turn_i" "$(jq -r '.error.message // (.error|tostring)' "$res")" >&2
+    return 1
+  fi
+  reply=$(jq -r '.choices[0].message.content // ""' "$res") || { printf 'agent.sh: turn %s: unreadable reply\n' "$turn_i" >&2; return 1; }
 
-printf -- '--- %s blocks, %s polls, session %s\n' "$n" "$polls" "$sess" >&2
+  run_block "$reply"; rc=$?
+  ((rc == 0)) || lost
+
+  pt=$(jq -r '.usage.prompt_tokens // 0' "$res")
+  hit=$(jq -r '.usage.prompt_cache_hit_tokens // 0' "$res")
+  miss=$(jq -r '.usage.prompt_cache_miss_tokens // 0' "$res")
+  out=$(jq -r '.usage.completion_tokens // 0' "$res")
+  cum_pt=$((cum_pt + pt)); cum_hit=$((cum_hit + hit)); cum_miss=$((cum_miss + miss)); cum_out=$((cum_out + out))
+  printf '<|meter|> turn=%s prompt=%s hit=%s miss=%s out=%s cum_prompt=%s\n' \
+    "$turn_i" "$pt" "$hit" "$miss" "$out" "$cum_pt" >>"$traj"
+  printf 'meter: turn %s prompt %s (hit %s, miss %s), out %s, cumulative prompt %s\n' \
+    "$turn_i" "$pt" "$hit" "$miss" "$out" "$cum_pt" >&2
+  return 0
+}
+
+run_task() {
+  [[ -n ${task-} ]] && printf '<|user|>\nUser: %s\n' "$task" >>"$traj"
+  while ((turn_i < max_turns)); do
+    turn || return 1
+    (($(pending) > 0)) && drain
+  done
+  printf -- '--- %s turns, %s polls, %s spent prompt tokens, session %s\n' \
+    "$turn_i" "$polls" "$cum_pt" "$sess" >&2
+}
+
+if [[ -n $blocks_file ]]; then run_blocks; else run_task; fi

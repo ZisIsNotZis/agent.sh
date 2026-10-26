@@ -93,5 +93,38 @@ hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending
 wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
 hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
 
+# the turn: a model in a file, so the loop, the meter and resume are all free to check
+wake_stub=test/stub-model.sh
+s1=$work/turn
+bash agent.sh --task 'say hello and start a job' --session "$s1" --stub "$wake_stub" --max-turns 2 \
+  >"$work/turn.out" 2>"$work/turn.err"
+hasin "$work/turn.out" 'Bash: hello from turn one' 'a turn runs its reply as the block'
+hasin "$work/turn.out" 'Job: job 1 exited 0' 'a job finishing between turns arrives as Job:'
+hasin "$s1/traj.md" '<|meter|> turn=1 prompt=1200' 'the trajectory carries a meter line per turn'
+hasin "$s1/traj.md" '<|meter|> turn=2' 'one meter line for each turn, in order'
+hasin "$work/turn.err" 'cumulative prompt 3600' 'the meter totals across the session'
+
+# resume: killed after one turn, continued, and the record only grew
+s2=$work/resume
+bash agent.sh --task 'go' --session "$s2" --stub "$wake_stub" --max-turns 1 >/dev/null 2>&1
+cp "$s2/traj.md" "$work/after-one.md"
+bash agent.sh --session "$s2" --resume --stub "$wake_stub" --max-turns 2 >/dev/null 2>&1
+if cmp -s -n "$(stat -c%s "$work/after-one.md")" "$work/after-one.md" "$s2/traj.md"; then
+  printf 'ok   resume appends to the trajectory and never rewrites it\n'
+else
+  printf 'FAIL resume changed bytes the killed run had already written\n'; fail=1
+fi
+hasin "$s2/traj.md" 'turn=2 prompt=2400 hit=1024' 'the resumed turn is turn two, and the cache shows'
+
+# the request itself: turn two extends turn one's messages instead of changing them
+k=$(jq '.messages | length' "$s2/req.1.json")
+if jq -c --argjson k "$k" '.messages[0:$k]' "$s2/req.2.json" >"$work/m2" &&
+   jq -c '.messages' "$s2/req.1.json" >"$work/m1" && cmp -s "$work/m1" "$work/m2"; then
+  printf 'ok   the second request repeats the first one byte for byte as its prefix\n'
+else
+  printf 'FAIL the second request does not start with the first\n'; fail=1
+fi
+hasin "$s2/req.1.json" 'You are an agent with no tools' 'the system prompt is what the request carries first'
+
 ((fail == 0)) && printf '\nall invariants hold\n' || printf '\nsomething above failed\n'
 exit "$fail"
