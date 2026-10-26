@@ -22,7 +22,7 @@ export DEEPSEEK_API_KEY=…                          # deepseek.com; the complet
 bash agent.sh --task 'report the three largest files in this repo, with sizes' --max-turns 6
 ```
 
-`--session DIR` pins where the run writes, `--resume` continues an existing session, `--lines N` sets the truncation window, and `--stub FILE` replaces the API with a script for a free, deterministic run (that is what `test/run.sh` uses). Every turn appends a `<|meter|>` line to the trajectory with `prompt`, `hit`, `miss`, `out` and the running total, and prints the same line to stderr.
+`--session DIR` pins where the run writes, `--resume` continues an existing session, `--lines N` sets the truncation window, `--compact-at N` compacts once a turn's prompt reaches `N` tokens, and `--stub FILE` replaces the API with a script for a free, deterministic run (that is what `test/run.sh` uses). Every turn appends a `<|meter|>` line to the trajectory with `prompt`, `hit`, `miss`, `out` and the running total, and prints the same line to stderr.
 
 ## Why
 
@@ -67,7 +67,7 @@ Running. The loop is closed and honest about what it has proven:
 - landed: the boundary (nonce slip, byte count, arithmetic), truncation with the raw file named, binary refusal, the harness surviving a block that kills its hands, `bgrun`/`bgwait` over disk job state, a job outliving the model's turn and arriving as `Job:` with its note, the turn itself — completions call, reply executed as the block, meter line, resume that only ever appends — and a system prompt that teaches the protocol, since there is no tool list to teach it.
 - next: `/compact` as an appended message plus a rebuilt prompt, then one real unattended run committed under `runs/<date>-demo/`, then review by someone who did not write it.
 
-`bash test/run.sh` checks all of that with a stub model, free and deterministic. The live path is one thin `curl` behind it.
+`bash test/run.sh` checks all of that with a stub model, free and deterministic — 39 invariants, including the one that matters most: `test/check-prefix.sh` reads a run's own `usage` lines and fails if the prompt cache stopped matching, so "the prefix never changes" is arithmetic rather than a promise. The live path is one thin `curl` behind it.
 
 The milestone, its four terms, the not-doing list and every decision taken with its cost are in [`docs/roadmap.md`](docs/roadmap.md). Whether the run is any good is the one judgement left to a reader.
 

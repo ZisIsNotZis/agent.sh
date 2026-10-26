@@ -120,6 +120,16 @@ Trajectory file is the state. One block = one assistant message, one chunk = one
 - **`--stub` is the model-in-a-file for the turn**, the same idea the blocks driver already uses: a script that reads the request and writes a response. Every invariant of the loop, the meter and resume is checked with it for free, and `complete()` is the one function where a network call can happen.
 - **The reply is executed raw.** No fence stripping, no `$ ` trimming, no prose detection: the design says the model's text *is* the block, so a model that writes prose gets prose executed and learns from the error — which is the experiment.
 
+### D9. Compaction, as landed
+
+`/compact` is not a rewrite and not a second store: it **appends** `User: /compact`, then a record `<|compact|> kept=<n>` and `<|summary|> …`, and every later request is *rebuilt* as system + the summary as one user message + the messages after `kept`.
+That keeps the one property everything else rests on: the file only grows, so a resumed run never re-reads a byte it has already seen.
+
+- **The summarisation call is a prefix extension**, exactly as it is in pi: the last user message is the `/compact` command plus the instruction, so the provider finds the whole conversation inside that request and it is a cache hit, not a cold start.
+- **The boundary is exempt from the cache rule, once.** The request after a boundary is a freshly built prefix, so `check-prefix.sh` skips exactly that one; the compaction call itself is still checked, because it extends the old prefix.
+- **The trigger is a token count, not a context overflow**: `--compact-at N` compacts when the last turn's `prompt_tokens` reached `N`. That is also how a demo can show compaction at 8k for pennies instead of waiting for a real window to fill.
+- **A request whose previous prompt is at or under one 1024-token chunk is reported as unverifiable**, not as passed: the arithmetic of "the prefix was found" needs a prefix larger than the smallest chunk the provider counts in.
+
 ## What is still open
 
 1. **Wake policy mid-turn.** Answered in `docs/roadmap.md` under `decide`, with its cost: a finished job ends the turn and arrives as its own `Job:` message.

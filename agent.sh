@@ -23,6 +23,7 @@ sess=''
 resume=''
 stub=''
 max_turns=8
+compact_at=0
 usage() { awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0" | grep -v '^SPDX-'; }
 
 while (($#)); do
@@ -33,6 +34,7 @@ while (($#)); do
     --session) sess=${2-};       shift 2 ;;
     --resume) resume=1;          shift ;;
     --max-turns) max_turns=${2-}; shift 2 ;;
+    --compact-at) compact_at=${2-}; shift 2 ;;
     --stub)   stub=${2-};        shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'agent.sh: unknown argument %s\n' "$1" >&2; exit 64 ;;
@@ -45,6 +47,7 @@ fi
 [[ -z $blocks_file || -r $blocks_file ]] || { printf 'agent.sh: cannot read %s\n' "$blocks_file" >&2; exit 66; }
 [[ $lines_max =~ ^[0-9]+$ ]] || { printf 'agent.sh: --lines takes a number\n' >&2; exit 64; }
 [[ $max_turns =~ ^[0-9]+$ ]] || { printf 'agent.sh: --max-turns takes a number\n' >&2; exit 64; }
+[[ $compact_at =~ ^[0-9]+$ ]] || { printf 'agent.sh: --compact-at takes a number\n' >&2; exit 64; }
 
 sess=${sess:-${AGENT_SH_SESSION_ROOT:-$PWD/.session}/$(date -u +%Y%m%dT%H%M%SZ)-$$}
 mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" || exit 73
@@ -250,29 +253,61 @@ read -r cum_pt cum_hit cum_miss cum_out < <(awk '
     split($i, kv, "="); s[kv[1]] += kv[2] } }
   END { printf "%d %d %d %d\n", s["prompt"], s["hit"], s["miss"], s["out"] }' "$traj" 2>/dev/null)
 cum_pt=${cum_pt:-0}; cum_hit=${cum_hit:-0}; cum_miss=${cum_miss:-0}; cum_out=${cum_out:-0}
-turn_i=$(grep -c '^<|meter|>' "$traj" 2>/dev/null || true)
+turn_i=$(grep '^<|meter|>' "$traj" 2>/dev/null | grep -vc 'compact=1' || true)
+compacts=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
+last_pt=$(grep '^<|meter|>' "$traj" 2>/dev/null | grep -v 'compact=1' | tail -1 | sed -n 's/.*prompt=\([0-9]*\).*/\1/p')
+last_pt=${last_pt:-0}
 
 [[ -r $prompt_file ]] || { printf 'agent.sh: no system prompt at %s\n' "$prompt_file" >&2; exit 66; }
 
-traj_msgs() {          # the trajectory as NUL-separated (role, content) pairs
-  awk '
-    function emit() { sub(/\n$/, "", buf); printf "%s%c%s%c", role, 0, buf, 0 }
-    $0 == "<|assistant|>" || $0 == "<|user|>" {
-      if (role != "") emit()
-      role = ($0 == "<|user|>") ? "user" : "assistant"; buf = ""; next
+# --- the trajectory is the only store: read it back as records, NUL-separated field by field
+# msg\0role\0content\0 | meter\0line\0 | compact\0kept\0 | summary\0text\0
+# NUL is safe as a separator because binary output is refused, so no body can contain one.
+parse_traj() {         # fills mrole, mcontent, kept (messages to skip), sumtext
+  local t a b
+  mrole=(); mcontent=(); kept=0; sumtext=''
+  while IFS= read -r -d '' t; do
+    case $t in
+      msg)     IFS= read -r -d '' a; IFS= read -r -d '' b; mrole+=("$a"); mcontent+=("$b") ;;
+      summary) IFS= read -r -d '' a; sumtext=$a ;;
+      compact) IFS= read -r -d '' a; kept=$a ;;
+      meter)   IFS= read -r -d '' a ;;
+    esac
+  done < <(awk '
+    function flush() {
+      if (role == "") return
+      sub(/\n$/, "", buf)
+      if (role == "summary") printf "summary%c%s%c", 0, buf, 0
+      else printf "msg%c%s%c%s%c", 0, role, 0, buf, 0
+      buf = ""; role = ""
     }
+    $0 == "<|assistant|>" || $0 == "<|user|>" {
+      flush(); role = ($0 == "<|user|>") ? "user" : "assistant"; buf = ""; next
+    }
+    $0 == "<|summary|>" { flush(); role = "summary"; buf = ""; next }
+    /^<\|meter\|>/   { flush(); printf "meter%c%s%c", 0, $0, 0; next }
+    /^<\|compact\|>/ { flush(); printf "compact%c%s%c", 0, substr($0, index($0, "kept=") + 5), 0; next }
     { buf = buf $0 "\n" }
-    END { if (role != "") emit() }
-  ' "$traj"
+    END { flush() }
+  ' "$traj")
 }
 
-build_request() {      # $1 out file: system prompt, then every message, verbatim
-  local out=$1 role content
+build_request() {      # $1 out file, $2 an extra user message appended for this call
+  local out=$1 extra=${2-} i
+  parse_traj
   : >"$sess/msgs.jsonl"
   jq -cn --rawfile c "$prompt_file" '{role:"system",content:$c}' >>"$sess/msgs.jsonl"
-  while IFS= read -r -d '' role && IFS= read -r -d '' content; do
-    jq -cn --arg r "$role" --arg c "$content" '{role:$r,content:$c}' >>"$sess/msgs.jsonl"
-  done < <(traj_msgs)
+  if [[ -n $sumtext ]]; then
+    # the compacted history rides as one user message, so it is stable prefix and not system noise
+    jq -cn --arg c "User: [everything before this point, summarised]
+$sumtext" '{role:"user",content:$c}' >>"$sess/msgs.jsonl"
+  fi
+  for ((i = kept; i < ${#mrole[@]}; i++)); do
+    jq -cn --arg r "${mrole[i]}" --arg c "${mcontent[i]}" '{role:$r,content:$c}' >>"$sess/msgs.jsonl"
+  done
+  if [[ -n $extra ]]; then
+    jq -cn --arg c "$extra" '{role:"user",content:$c}' >>"$sess/msgs.jsonl"
+  fi
   jq -s --arg model "$model" --arg effort "$effort" --argjson max "$max_tokens" \
     '{model:$model, reasoning_effort:$effort, max_tokens:$max, messages:.}' \
     "$sess/msgs.jsonl" >"$out"
@@ -311,10 +346,41 @@ turn() {               # request, block, trajectory, meter; 0 ok
   miss=$(jq -r '.usage.prompt_cache_miss_tokens // 0' "$res")
   out=$(jq -r '.usage.completion_tokens // 0' "$res")
   cum_pt=$((cum_pt + pt)); cum_hit=$((cum_hit + hit)); cum_miss=$((cum_miss + miss)); cum_out=$((cum_out + out))
+  last_pt=$pt
   printf '<|meter|> turn=%s prompt=%s hit=%s miss=%s out=%s cum_prompt=%s\n' \
     "$turn_i" "$pt" "$hit" "$miss" "$out" "$cum_pt" >>"$traj"
   printf 'meter: turn %s prompt %s (hit %s, miss %s), out %s, cumulative prompt %s\n' \
     "$turn_i" "$pt" "$hit" "$miss" "$out" "$cum_pt" >&2
+  return 0
+}
+
+# --- /compact: an appended message, a summary, and a prefix that changes exactly once ------
+compact_cmd='User: /compact — summarise this conversation for a fresh start: the task, what was tried
+and what it showed, what is true now (paths, job state, decisions), and what is left. Write it
+as plain text for another incarnation of yourself. Do not run anything: this reply is the
+summary, not a block.'
+
+
+compact() {            # appends the command, then a compact record carrying the summary
+  local req=$sess/req.compact.json res=$sess/res.compact.json summary pt hit miss out before
+  parse_traj; before=${#mrole[@]}
+  build_request "$req" "$compact_cmd"
+  complete "$req" "$res" || { printf 'agent.sh: compaction: the request did not complete\n' >&2; return 1; }
+  summary=$(jq -r '.choices[0].message.content // ""' "$res")
+  [[ -n $summary ]] || { printf 'agent.sh: compaction: an empty summary, so nothing was compacted\n' >&2; return 1; }
+  # the command is a real user message, and the record is what a resumed run rebuilds from
+  printf '<|user|>\nUser: /compact\n' >>"$traj"
+  printf '<|compact|> kept=%s\n<|summary|>\n%s\n' "$((before + 1))" "$summary" >>"$traj"
+  compacts=$((compacts + 1))
+  pt=$(jq -r '.usage.prompt_tokens // 0' "$res")
+  hit=$(jq -r '.usage.prompt_cache_hit_tokens // 0' "$res")
+  miss=$(jq -r '.usage.prompt_cache_miss_tokens // 0' "$res")
+  out=$(jq -r '.usage.completion_tokens // 0' "$res")
+  cum_pt=$((cum_pt + pt)); cum_hit=$((cum_hit + hit)); cum_miss=$((cum_miss + miss)); cum_out=$((cum_out + out))
+  printf '<|meter|> compact=1 prompt=%s hit=%s miss=%s out=%s cum_prompt=%s\n' \
+    "$pt" "$hit" "$miss" "$out" "$cum_pt" >>"$traj"
+  printf 'compact: boundary %s after %s messages, prompt %s (hit %s), summary %s chars\n' \
+    "$compacts" "$before" "$pt" "$hit" "${#summary}" >&2
   return 0
 }
 
@@ -323,6 +389,7 @@ run_task() {
   while ((turn_i < max_turns)); do
     turn || return 1
     (($(pending) > 0)) && drain
+    if ((compact_at > 0 && last_pt >= compact_at)); then compact; fi
   done
   printf -- '--- %s turns, %s polls, %s spent prompt tokens, session %s\n' \
     "$turn_i" "$polls" "$cum_pt" "$sess" >&2

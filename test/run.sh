@@ -100,9 +100,9 @@ bash agent.sh --task 'say hello and start a job' --session "$s1" --stub "$wake_s
   >"$work/turn.out" 2>"$work/turn.err"
 hasin "$work/turn.out" 'Bash: hello from turn one' 'a turn runs its reply as the block'
 hasin "$work/turn.out" 'Job: job 1 exited 0' 'a job finishing between turns arrives as Job:'
-hasin "$s1/traj.md" '<|meter|> turn=1 prompt=1200' 'the trajectory carries a meter line per turn'
+hasin "$s1/traj.md" '<|meter|> turn=1 prompt=2000' 'the trajectory carries a meter line per turn'
 hasin "$s1/traj.md" '<|meter|> turn=2' 'one meter line for each turn, in order'
-hasin "$work/turn.err" 'cumulative prompt 3600' 'the meter totals across the session'
+hasin "$work/turn.err" 'cumulative prompt 8000' 'the meter totals across the session'
 
 # resume: killed after one turn, continued, and the record only grew
 s2=$work/resume
@@ -114,7 +114,7 @@ if cmp -s -n "$(stat -c%s "$work/after-one.md")" "$work/after-one.md" "$s2/traj.
 else
   printf 'FAIL resume changed bytes the killed run had already written\n'; fail=1
 fi
-hasin "$s2/traj.md" 'turn=2 prompt=2400 hit=1024' 'the resumed turn is turn two, and the cache shows'
+hasin "$s2/traj.md" 'turn=2 prompt=6000 hit=5800' 'the resumed turn is turn two, and the cache shows'
 
 # the request itself: turn two extends turn one's messages instead of changing them
 k=$(jq '.messages | length' "$s2/req.1.json")
@@ -125,6 +125,43 @@ else
   printf 'FAIL the second request does not start with the first\n'; fail=1
 fi
 hasin "$s2/req.1.json" 'You are an agent with no tools' 'the system prompt is what the request carries first'
+
+# compaction: an appended command, a summary, and one prefix rebuilt from it
+s3=$work/compact
+bash agent.sh --task 'go' --session "$s3" --stub "$wake_stub" --max-turns 6 --compact-at 4000 \
+  >"$work/compact.out" 2>"$work/compact.err"
+hasin "$s3/traj.md" '<|compact|> kept=' 'compaction appends a record with its boundary'
+hasin "$s3/traj.md" '<|summary|>' 'compaction writes the summary it got back'
+hasin "$s3/traj.md" '<|meter|> compact=1' 'the compaction call is metered too'
+after=$(grep -n '^<|compact|>' "$s3/traj.md" | head -1 | cut -d: -f1)
+if [[ -n $after ]] && sed -n "$((after + 1)),\$p" "$s3/traj.md" | grep -q '<|meter|> turn=3'; then
+  printf 'ok   the turn after a boundary starts from the summary, not the old history\n'
+else
+  printf 'FAIL no turn follows the compaction boundary\n'; fail=1
+fi
+first_turn_after=$(ls "$s3"/req.*.json | while read -r f; do n=${f##*.}; done; echo)
+if jq -e '.messages[1].content | startswith("User: [everything before this point, summarised]")' \
+     "$s3"/req.3.json >/dev/null 2>&1; then
+  printf 'ok   the rebuilt prefix is the summary, and it is at the front\n'
+else
+  printf 'FAIL the request after the boundary does not start with the summary\n'; fail=1
+fi
+
+# and the proof itself: the cache arithmetic, which must also be able to fail
+if bash test/check-prefix.sh "$s3" >"$work/prefix.out" 2>&1; then
+  printf 'ok   check-prefix passes a run whose prefixes held (%s)\n' \
+    "$(grep -o '[0-9]* boundaries, [0-9]* checked, 0 failed' "$work/prefix.out" | head -1)"
+else
+  printf 'FAIL check-prefix rejected a healthy run\n'; cat "$work/prefix.out"; fail=1
+fi
+mkdir -p "$work/broken"
+printf '<|meter|> turn=1 prompt=3000 hit=0 miss=3000 out=1 cum_prompt=3000\n<|meter|> turn=2 prompt=4000 hit=0 miss=4000 out=1 cum_prompt=7000\n' \
+  >"$work/broken/traj.md"
+if bash test/check-prefix.sh "$work/broken" >/dev/null 2>&1; then
+  printf 'FAIL check-prefix passed a trajectory whose prefix was rewritten\n'; fail=1
+else
+  printf 'ok   check-prefix fails a trajectory whose prefix was rewritten\n'
+fi
 
 ((fail == 0)) && printf '\nall invariants hold\n' || printf '\nsomething above failed\n'
 exit "$fail"
