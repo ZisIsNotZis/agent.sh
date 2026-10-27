@@ -9,14 +9,13 @@
 #     the free one, which makes no API call: blocks separated by a line holding exactly `%%`
 #     stand in for what the model would have written.
 #
-# The boundary is arithmetic, not a search: the block's output goes to a file, and the control
-# pipe carries one slip `SENT <nonce> <exit> <bytes>` followed by \x02, with the nonce fresh per
-# block. The size in the slip is only ever cross-checked against the file, which is the authority;
-# a disagreement is reported as the boundary not holding rather than believed.
-# What this buys is that no *accidental* output can pass for a slip. What it cannot buy: the block
-# runs inside the shell that reports the boundary, so a block that deliberately shadows builtins
-# or reads the command stream can speak in the harness's voice. That is a known residual, written
-# down in docs/design.md, not a claim.
+# The boundary is a file, not a stream. The block is written to its own file with one line
+# appended — `>"$slipdir/<nonce>.$?"` — which is a redirection with no command word, so the shell
+# parser writes the block's status into a file name after the block has run. A redirection cannot
+# be shadowed by a function the block defines, so the report is the one thing a block cannot fake
+# with a builtin. The output itself is read from its own file by byte count.
+# What remains is the no-sandbox line and is written down in docs/design.md, not claimed away: a
+# block that reads its own file can find the nonce, and can write a slip file itself.
 # SPDX-License-Identifier: AGPL-3.0-only — see LICENSE.
 
 set -u
@@ -74,7 +73,8 @@ if ((replay)); then
   scratch=$(mktemp -d) || exit 73
   trap 'rm -rf "$scratch"' EXIT
 fi
-((replay)) || { mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" || exit 73; }
+slipdir=$sess/slip
+((replay)) || { mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" "$sess/blk" "$slipdir" || exit 73; }
 
 # --- the hands' env: the only two functions the model is given, and nothing else ------------
 cat >"$scratch/env.sh" <<'ENV'
@@ -122,7 +122,9 @@ export BASH_ENV=$scratch/env.sh
 # --- the hands: a bash with no tty, in its own session, reachable only over the coproc ------
 start_hands() {
   rm -f "$sess/hands.pid"
-  coproc HANDS { exec setsid bash --norc --noprofile 2>&1; }
+  # the hands write nothing the harness reads over the pipe any more: its stdout goes to a log
+  # so a chatty block cannot fill a pipe nobody drains
+  coproc HANDS { exec setsid bash --norc --noprofile >>"$sess/hands.log" 2>&1; }
   # `setsid` may fork, so the coproc's own pid is not the hands': have the hands say who it is
   printf 'printf "%%s\n" "$$" >"%s"\n' "$sess/hands.pid" >&"${HANDS[1]}" 2>/dev/null
 }
@@ -133,44 +135,50 @@ execs=0  # every call into the hands, wake calls included
 # a session that already ran resumes its numbering, so no raw file is overwritten
 execs=$(find "$sess/raw" -name '*.raw' 2>/dev/null | wc -l)
 polls=0
-exec_block() {         # $1 body, $2 seconds to wait (0 = forever); sets raw chunk st bytes
-  local body=$1 tmo=${2-$block_timeout} nonce d t sz rc
+exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
+  local body=$1 tmo=${2-$block_timeout} nonce blk found start left w   # st, bytes: global
   execs=$((execs + 1))
   raw=$sess/raw/$execs.raw
   chunk=$sess/out/$execs.txt
+  blk=$sess/blk/$execs.sh
   nonce=$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')
-  d="__AGENT_${nonce}__"
 
-  printf "builtin read -r -d '' __b <<'%s'\n%s\n%s\n" "$d" "$body" "$d" >&"${HANDS[1]}" 2>/dev/null || return 70
-  printf '%s' "builtin eval -- \"\$__b\" >\"$raw\" 2>&1; __s=\$?; __n=\$(command wc -c <\"$raw\"); builtin printf 'SENT $nonce %d %d\x02' \"\$__s\" \"\$__n\"
-" >&"${HANDS[1]}" 2>/dev/null || return 70
-  # a block that never finishes is the one way an unattended run dies of nothing: no slip
-  # turns into a wall-clock bound, and the price is the shell state, which is honest.
-  # a block that never finishes is the one way an unattended run dies of nothing: no slip
-  # turns into a wall-clock bound, and the price is the shell state, which is honest.
-  local deadline
+  # The block travels as a file the harness writes, not as a heredoc the shell has to read:
+  # nothing quotes it, nothing can corrupt it, and the slip line comes last inside the same
+  # file, so it runs after the block, in the block's own shell, with the block's own status.
+  # That line is a redirection with no command word — `>"$dir/$nonce.$?"` — and a redirection is
+  # the shell's own parser, which no function a block defines can shadow or replace.
+  { printf '%s\n' "$body"; printf '>"%s/%s.$?"\n' "$slipdir" "$nonce"; } >"$blk" || return 70
 
-  deadline=$(($(date +%s) + tmo))
-  while :; do
-    # the budget is a wall clock across every skipped record, so a payload cannot buy time by
-    # writing stray boundaries and cannot exhaust a record count either
-    local left=$((deadline - $(date +%s)))
-    ((left > 0)) || return 73
-    [[ -v HANDS[0] ]] || return 71      # the hands are gone: no farther slip is coming
-    IFS= builtin read -r -t "$left" -d $'\x02' t <&"${HANDS[0]-}"; rc=$?
-    ((rc == 0)) || { ((rc > 128)) && return 73; return 71; }
-    [[ $t == "SENT $nonce "* ]] && break
-    # not this block's slip: a stray byte, or something speaking in the harness's voice
-  done
-  read -r st sz <<<"${t#SENT $nonce }"
-
-  # the file is the authority on size, so a forged count is a disagreement, not a fact
-  bytes=$(command wc -c <"$raw")
-  if [[ $sz != "$bytes" ]]; then
-    boundary_lie="the slip said $sz bytes and the file holds $bytes"
-    return 74
+  # A block that does not parse never reaches the hands: its shell state is untouched and the
+  # error is an ordinary result instead of a wait that ends in a timeout.
+  if ! command bash -n "$blk" 2>/dev/null; then
+    command bash -n "$blk" 2>"$raw"
+    bytes=$(command wc -c <"$raw"); command head -c "$bytes" "$raw" >"$chunk"
+    st=2
+    return 0
   fi
-  head -c "$sz" "$raw" >"$chunk"
+
+  printf '. "%s" >"%s" 2>&1\n' "$blk" "$raw" >&"${HANDS[1]}" 2>/dev/null || return 70
+
+  # the slip is a file, so the harness has to look for it; the nonce in its name is what makes
+  # a stale or forged file useless, and the clock is what keeps a block from hanging the run
+  start=$(date +%s)
+  while :; do
+    set -- "$slipdir/$nonce".*
+    if [[ -e $1 ]]; then found=$1; break; fi
+    # a block that ended its own shell (`exit 7`) leaves no slip: say that at once rather than
+    # waiting out the clock for something that is never coming
+    hp=$(command cat "$sess/hands.pid" 2>/dev/null)
+    if [[ -n $hp ]] && ! kill -0 "$hp" 2>/dev/null; then return 71; fi
+    left=$((start + tmo - $(date +%s)))
+    ((left > 0)) || return 73
+    command sleep 0.02
+  done
+  st=${found##*/}; st=${st#"$nonce".}
+  [[ $st =~ ^[0-9]+$ ]] || st='?'
+  bytes=$(command wc -c <"$raw")
+  command head -c "$bytes" "$raw" >"$chunk"
   return 0
 }
 
@@ -214,15 +222,6 @@ run_block() {          # $1 body, $2 a note to append after the status; prints, 
   exec_block "$(unfence "$1")" "${3-$block_timeout}"; rc=$?
   case $rc in
     0) ;;
-    74)
-      # the size in the slip is not the file's size: report the file and say the status is unproven
-      bytes=$(command wc -c <"$raw"); head -c "$bytes" "$raw" >"$chunk"; show
-      msg=$(printf 'Bash: [the boundary did not hold: %s; below is the file, and the status is the one the slip claimed, unproven]\n%s\n[status %s]' \
-        "$boundary_lie" "$body" "$st")
-      printf '%s\n' "$msg"
-      printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$(unfence "$1")" "$msg" >>"$traj"
-      restart_hands
-      return 0 ;;
     73)
       # the block is still running and the hands are the only thing holding it: kill them
       msg=$(printf '[this block ran longer than %ss and was killed, so the shell state it built is gone and a fresh bash is running]' "$block_timeout")
@@ -302,7 +301,7 @@ drain() {              # waits out the jobs, one Job: message per job, and count
         "$job_wait" "$(pending)" >>"$traj"
       return 0
     fi
-    if ((rc != 0 && rc != 74)); then
+    if ((rc != 0)); then
       # the hands are gone, so nothing can reap these jobs and their status is unknowable
       for c in "$AGENT_SH_JOBS"/*/; do
         [[ -f $c/pid && ! -f $c/status ]] || continue

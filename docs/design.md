@@ -145,6 +145,20 @@ The review of the demo run (`P7`) returned pass-with-findings. The findings that
 
 Not changed, and now stated rather than implied: the demo's `Job:` is a real job reaped by the harness's own drain, not the model's `bgwait`; `notes.md` says so where it points at the line.
 
+### D11. The boundary moved from a stream to a file name
+
+Two review passes proved the same thing: the slip was a line of shell the block's own shell executed, so shadowing `printf`, `wc`, `builtin`, `eval` or `read` let a block state a status the harness believed. Hardening the reporter (`builtin printf`, `command wc`) closed the cheap versions and left the real one — `builtin` itself is a name a function can take.
+
+So the report stopped being a command at all. The harness writes the block to `session/blk/<n>.sh` and appends `>"$slipdir/<nonce>.$?"` inside the same file. That line has no command word: bash opens the file and writes the *previous* status into its name, after the block has run. A block can shadow any name it likes; there is no name here. The harness looks for `session/slip/<nonce>.*`, takes the status from the extension and the size from the raw output file.
+
+Consequences, each measured:
+
+- **A block that does not parse never reaches the shell.** `bash -n` on the file first, so a malformed block costs nothing and its shell state is untouched — it is reported as `[status 2]` with the parser's message. The old heredoc transport put the block *into* the shell to find that out.
+- **Shadowing loses its power.** `printf`, `wc`, `eval`, `read` and `builtin` can all be shadowed now and nothing happens; the reviewer's five reproductions are invariants in `test/run.sh`.
+- **Shadowing `.` is the one loud case.** A block that redefines `.` stops the *next* block from being sourced, so no slip appears and that block ends as `[this block ran longer than Ns and was killed …]`. A timeout is a bad outcome; a silent empty success is a worse one, and this design cannot produce the second.
+- **The harness polls for the slip file**, every 20 ms while a block runs. That is the second polling site in the project and it is a deliberate change to `D3`: with the report as a file, something has to watch for the file, and `sleep 0.02` per tick costs less than the lie it replaces.
+- **What is left is the sandbox line.** A block can read its own source file, find the nonce and write a slip file itself; it can also append to `traj.md`, because `AGENT_SH_SESSION` is exported. Both are the declared no-sandbox boundary, not a defect being denied.
+
 ## What is still open
 
 1. **Wake policy mid-turn.** Answered in `docs/roadmap.md` under `decide`, with its cost: a finished job ends the turn and arrives as its own `Job:` message.

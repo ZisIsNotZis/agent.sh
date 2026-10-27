@@ -93,32 +93,37 @@ hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending
 wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
 hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
 
-# the reporter uses builtin/command, so a block that shadows printf or wc changes nothing
-cat >"$work/lie.sh" <<'BLOCKS'
-printf() { local n=${1#SENT }; n=${n%% *}; builtin printf 'SENT %s 42 3\002' "$n"; }
-wc() { echo 5; }
+# the reviewer's five reproductions of "the reporter can be made to lie": none of them lies now,
+# because the report is a redirection and the block's own file, not a builtin a block can shadow
+cat >"$work/shadow.sh" <<'BLOCKS'
+printf() { builtin printf 'FAKE printf\n'; }
+wc() { echo 999; }
+eval() { :; }
+read() { :; }
+builtin() { :; }
 echo ABCDE
 BLOCKS
-AGENT_SH_SESSION_ROOT=$work/lie bash agent.sh --blocks "$work/lie.sh" --lines 1000 \
-  >"$work/lie.out" 2>&1
-hasin "$work/lie.out" 'Bash: ABCDE' 'shadowing printf does not let a block speak for the harness'
-hasin "$work/lie.out" '[status 0]' 'the real status arrives despite a shadowed printf'
-hasntin "$work/lie.out" '[status 42]' 'a shadowed printf cannot set the reported status'
-hasntin "$work/lie.out" 'the boundary did not hold' 'and nothing about the boundary is disturbed'
+AGENT_SH_SESSION_ROOT=$work/shadow bash agent.sh --blocks "$work/shadow.sh" --lines 1000 \
+  >"$work/shadow.out" 2>&1
+hasin "$work/shadow.out" 'ABCDE' 'shadowing printf/wc/eval/read/builtin does not stop the block running'
+hasin "$work/shadow.out" 'Bash: ABCDE' 'the real output is what comes back'
+hasin "$work/shadow.out" '[status 0]' 'the real status is what comes back'
+hasntin "$work/shadow.out" '999' 'a shadowed wc cannot invent a size'
+hasntin "$work/shadow.out" 'FAKE printf' 'a shadowed printf cannot speak for the harness'
 
-# the residual, stated and checked: shadow `builtin` itself and the slip is forged — but the
-# file is still the authority on size, so the lie is reported rather than believed
-cat >"$work/residual.sh" <<'BLOCKS'
-builtin() { local n=${2#SENT }; n=${n%% *}; command printf 'SENT %s 42 3\002' "$n"; }
-echo ABCDE
+# shadowing `.` is the one shadow that changes behaviour, and it must be loud, not silent
+cat >"$work/dot.sh" <<'BLOCKS'
+function . { :; }
+echo shadow-installed
+%%
+echo this-block-cannot-be-sourced
 BLOCKS
-AGENT_SH_SESSION_ROOT=$work/residual bash agent.sh --blocks "$work/residual.sh" --lines 1000 \
-  >"$work/residual.out" 2>&1
-hasin "$work/residual.out" 'the boundary did not hold: the slip said 3 bytes and the file holds 6' \
-  'a forged size is caught against the file, and said out loud'
-hasin "$work/residual.out" 'ABCDE' 'the forged slip does not hide what the block really printed'
-hasin "$work/residual.out" 'the status is the one the slip claimed, unproven' \
-  'the forged status is shown as unproven rather than passed off as the block status'
+AGENT_SH_BLOCK_TIMEOUT=2 AGENT_SH_SESSION_ROOT=$work/dot timeout 20 bash agent.sh \
+  --blocks "$work/dot.sh" >"$work/dot.out" 2>&1
+hasin "$work/dot.out" 'shadow-installed' 'the block that shadows . runs normally'
+hasin "$work/dot.out" '[this block ran longer than 2s and was killed' \
+  'a shadowed . makes the next block a timeout, not a silent success'
+hasntin "$work/dot.out" 'this-block-cannot-be-sourced' 'and the block that could not run says nothing it did not print'
 
 # a stray byte on the control channel must not read as the hands dying
 cat >"$work/stray.sh" <<'BLOCKS'

@@ -9,7 +9,7 @@ The harness is the outer bash — it owns the API call, the trajectory, the labe
 ```sh
 git clone https://github.com/ZisIsNotZis/agent.sh
 cd agent.sh
-bash test/run.sh                                   # every invariant, no API call, a few seconds
+bash test/run.sh                                   # every invariant, no API call, about half a minute
 bash agent.sh --blocks examples/tour.sh            # the harness with the model's place taken by a file
 ```
 
@@ -28,11 +28,9 @@ bash agent.sh --task 'report the three largest files in this repo, with sizes' -
 
 Every agent framework answers "how does the model act?" by parsing its text for a tool call. This project deletes that question. The model's output *is* shell input, the shell already has files, jobs, pipes and state, and the only thing the harness has to solve is the boundary: knowing where a block ended and what its output was, when output arrives late from a background writer and the payload itself is untrusted bytes.
 
-That boundary is arithmetic, not a search. The block is transported as a nonce-delimited heredoc; the output goes to a file; the control pipe carries one slip, `SENT <nonce> <exit> <bytes>`, followed by `\x02`; the outer bash reads the file's own length and only accepts a slip whose size matches it.
+That boundary is a file, not a stream. The harness writes the block into its own file and appends one line: `>"$slipdir/<nonce>.$?"` — a redirection with no command word, so the shell's own parser writes the block's status into a file name once the block is done. A redirection cannot be shadowed, replaced or intercepted by a function the block defines, so the report is the one thing in the protocol that a block cannot fake with a builtin. Output is read from the block's own file by byte count; a block that does not parse never reaches the shell at all and is reported as a syntax error with status 2.
 
-So no *accidental* output can pass for a slip: the nonce is fresh per block, and the size in the slip is only a cross-check against the file, so a forged size is reported as `[the boundary did not hold: …]` rather than believed.
-
-What this cannot do, and does not claim: a block runs inside the shell that reports the boundary, so a block that deliberately shadows `builtin` (or, before the `builtin`/`command` hardening, `printf`, `wc`, `eval` or `read`) can state a status the harness will take at face value when the size happens to match. The boundary protects against accidents and against the cheap lies; it is not a sandbox for the reporter. [`docs/design.md`](docs/design.md) D10 records that with the reproduction, and the roadmap carries the change that would close it (P8).
+The residual is the declared no-sandbox line and nothing more: a block can read its own source, so it can find the nonce and write a slip file itself. That is written down in [`docs/design.md`](docs/design.md) D11 with its reproduction instead of being claimed away — along with the one thing that is cheap to notice, that a block which shadows `.` breaks the *next* block's transport, which shows up as a timeout rather than as a silent success.
 
 ## What a turn looks like
 
