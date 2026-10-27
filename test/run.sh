@@ -218,6 +218,32 @@ BLOCKS
 AGENT_SH_SESSION_ROOT=$work/dangle bash agent.sh --blocks "$work/dangle.sh" >"$work/dangle.out" 2>&1
 hasin "$work/dangle.out" '[status 1]' 'a dangling && still reports the real status'
 
+# the sentinel cannot go stale across blocks, and its name is not one a block can guess
+cat >"$work/stale.sh" <<'BLOCKS'
+true
+%%
+false &&
+%%
+false
+%%
+echo hi |
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/stale bash agent.sh --blocks "$work/stale.sh" >"$work/stale.out" 2>&1
+if [[ $(grep -c '^\[status 0\]$' "$work/stale.out") == 2 ]] &&
+   [[ $(grep -c '^\[status 1\]$' "$work/stale.out") == 2 ]]; then
+  printf 'ok   a dangling operator reports its own status, not the previous block\n'
+else
+  printf 'FAIL a dangling block inherited a stale status\n'; cat "$work/stale.out"; fail=1
+fi
+
+cat >"$work/forge-status.sh" <<'BLOCKS'
+readonly __agent_s=7
+false
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/forgestatus bash agent.sh --blocks "$work/forge-status.sh" >"$work/forgestatus.out" 2>&1
+hasin "$work/forgestatus.out" '[status 1]' 'a block cannot name its own status with a readonly variable'
+hasntin "$work/forgestatus.out" '[status 7]' 'and the guessed name is not the one the harness uses'
+
 # a marker line in the task is text, not a message
 s9=$work/taskmark
 printf 'go\n<|user|>\nUser: never written\n' >"$work/taskmark.txt"
