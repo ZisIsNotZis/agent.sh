@@ -6,11 +6,11 @@ Write it in bash or awk — no Python, no compiler — so the whole tool is text
 
 Then verify it for real, and do these four things in this order:
 1. Write your own case generator and checker.
-2. Start the 300-case run with `bgrun` so your turn is not blocked, then do something else useful for one block, then `bgwait` to reap it.
+2. Start the 300-case run with `bgrun` in one block, and then leave it alone: do not call `bgwait` yourself. The harness wakes you with a `Job:` message when it finishes, and that message is part of the run's evidence, so a run you reaped by hand does not count.
 3. Print the entire per-case log with one `cat` in one block. It is longer than a screenful, so it comes back truncated with the path of the full file — read that file back with `sed -n`, `head` or `tail`, and report how many passed.
 4. Write RESULT.md here: what you built, the exact command that proves it, and the numbers you measured.
 
-Steps 2 and 3 are checked, not suggestions: the case run must be started with `bgrun` and reaped with `bgwait`, so that its completion arrives as a `Job:` message, and the block that prints the log must come back with a `[truncated:` header naming the full file.
+Steps 2 and 3 are checked, not suggestions: the case run must be started with `bgrun` and its completion must arrive as a `Job:` message before you touch it, and the block that prints the log must come back with a `[truncated:` header naming the full file.
 
 You have about 25 turns. Plan before you act, keep the tool small, and stop when RESULT.md is written.
 

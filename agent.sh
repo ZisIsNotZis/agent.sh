@@ -212,7 +212,7 @@ unfence() {            # $1 body; prints the body to execute
   if [[ $first =~ ^\`\`\`[A-Za-z0-9_+.-]*$ ]]; then
     # a fence is a command substitution to bash, so the fence goes: the block is what lies
     # between the first fence line and the next one, and prose after the closing fence was
-    # never meant to run — taking it with the fence is cheaper than explaining it every turn
+    # never meant to run
     printf '%s\n' "$b" | awk '
       { line[NR] = $0 }
       END {
@@ -223,7 +223,9 @@ unfence() {            # $1 body; prints the body to execute
         for (i = start + 1; i < stop; i++) print line[i]
       }'
   else
-    printf '%s' "$b"
+    # a fence line anywhere else is the same accident in a smaller dose: a markdown habit, never
+    # something to run. It is dropped wherever it appears, and no fence is ever a bash statement.
+    printf '%s\n' "$b" | awk '!/^[[:space:]]*```[A-Za-z0-9_+.-]*[[:space:]]*$/'
   fi
 }
 

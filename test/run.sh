@@ -244,6 +244,19 @@ AGENT_SH_SESSION_ROOT=$work/prose bash agent.sh --blocks "$work/prose.sh" >"$wor
 hasin "$work/prose.out" 'Bash: fenced-content' 'the fenced part runs'
 hasntin "$work/prose.out" 'never meant to run' 'the prose after the closing fence does not'
 
+# a fence line inside a block is the same accident as one around it: it is not run
+cat >"$work/midfence.sh" <<'BLOCKS'
+echo first-part
+```
+bgrun -n note true
+```
+echo second-part
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/midfence bash agent.sh --blocks "$work/midfence.sh" >"$work/midfence.out" 2>&1
+hasin "$work/midfence.out" 'first-part' 'the block runs up to the stray fence'
+hasin "$work/midfence.out" 'second-part' 'and continues after it'
+hasin "$work/midfence.out" 'job 1 started' 'the command between stray fences is not lost'
+
 # a burst of stray boundary bytes is skipped until the real slip arrives
 cat >"$work/burst.sh" <<'BLOCKS'
 for i in $(seq 1 70); do printf '\002' >&10; done 2>/dev/null; echo payload-ran
