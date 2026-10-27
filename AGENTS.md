@@ -10,6 +10,8 @@ How to start: read this file, then `docs/roadmap.md` — the milestone, its four
 Then `README.md` if you are a stranger to it, and `docs/design.md` if you are about to change the design: every branch that lost is there with the measurement that killed it, and re-running `probes/` re-measures the claims in about a minute.
 `bash test/run.sh` is the invariant check that costs nothing and needs no metered calls.
 
+M1 is closed (2026-10-27). The roadmap's status line records the person's verdict, the evidence that was re-run at closure, and what is deliberately not done; new work needs a new milestone from the person, not a reopening of M1.
+
 How to continue: take the next open package in `docs/roadmap.md` whose dependencies are landed, and write its status into that table in the same commit that lands it.
 Messages to this project land in `inbox/`; a message from this project is written into the receiver's own `inbox/`, never kept here.
 Nothing that changes acceptance, cost, scope or the delivered result is spoken before it is written down.

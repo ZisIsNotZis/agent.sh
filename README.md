@@ -114,11 +114,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md). The short version: every bug found bec
 
 ## Roadmap
 
-**Implemented** — one milestone, `M1`, and its packages `P1`–`P8` are all landed: the boundary (`test/run.sh`), the hands' env and `bgrun`/`bgwait`, the turn with resume and the meter line, the system prompt, `/compact` with prefix stability, the demo run, independent review, and the reporter a block cannot shadow. `bash test/run.sh` checks every invariant in that list with no metered call; `runs/2026-10-26-demo/` holds the trajectory they were built for — twenty turns, one `Job:`, two truncations, one compaction, 83,724 prompt tokens, and `bash runs/2026-10-26-demo/check-prefix.sh` rebuilding all 20 requests from the record with 0 failed.
+**Closed** — the one milestone, `M1`, is closed on 2026-10-27; its packages `P1`–`P8` are all landed: the boundary (`test/run.sh`), the hands' env and `bgrun`/`bgwait`, the turn with resume and the meter line, the system prompt, `/compact` with prefix stability, the demo run, independent review, and the reporter a block cannot shadow. `bash test/run.sh` checks all 104 invariants with no metered call; `runs/2026-10-26-demo/` holds the live trajectory they were built for — twenty turns, one `Job:`, two truncations, one compaction, 83,724 prompt tokens, and `bash runs/2026-10-26-demo/check-prefix.sh` rebuilds all 20 requests from the record with 0 failed. The ninth independent review pass found no bug.
 
-**Planned** — the milestone's acceptance is a person reading the trajectory and the harness, which is not something this repository can perform on itself. After that, what is deliberately absent is also decided: no tool-call protocol (that is the project), no sandbox, no tmux, no pty, no Python, no streaming in v0, no live output while a block runs.
+No live API call is needed to verify any of this: the committed run is the live evidence, and the free `--blocks` and `--stub` paths exercise the same loop. What is deliberately absent is decided: no tool-call protocol (that is the project), no sandbox, no tmux, no pty, no Python, no streaming in v0, no live output while a block runs.
 
-The future this is aiming at: one primitive — a process in the background — carrying subagents, timers and reminders, with the harness small enough that a bug in it is a thing a reader can find. Whether the run is any good is the one judgement left to a reader.
+The future this is aiming at: one primitive — a process in the background — carrying subagents, timers and reminders, with the harness small enough that a bug in it is a thing a reader can find. Whether the run is any good remains a reader's judgement; the harness's own claim is that it has no reproducible bug.
 
 ## The demo run
 

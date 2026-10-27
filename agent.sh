@@ -2,12 +2,17 @@
 # agent.sh — an agent with no tools: what the model writes is executed by one long-lived bash.
 #
 # Two drivers, and the same hands behind both.
-#   bash agent.sh --task '<text>' [--session DIR] [--max-turns N] [--lines N] [--stub FILE]
+#   bash agent.sh --task '<text>' [--session DIR] [--resume] [--max-turns N]
+#                     [--compact-at N] [--lines N] [--stub FILE]
 #     the real one: one completions request per turn, the reply executed as the block, the
-#     trajectory appended, a meter line per turn. `--resume` continues an existing session.
+#     trajectory appended, a meter line per turn. `--resume` continues an existing session;
+#     `--compact-at N` compacts once a turn's prompt reaches N tokens.
 #   bash agent.sh --blocks <file> [--lines N]
 #     the free one, which makes no API call: blocks separated by a line holding exactly `%%`
 #     stand in for what the model would have written.
+#   bash agent.sh --replay <session> <turn>
+#     rebuild what turn <turn> would have sent, from the session's trajectory alone. The
+#     read-only path `test/check-prefix.sh` uses; it writes only to a temporary directory.
 #
 # The boundary is a file, not a stream. The block is written to its own file with one line
 # appended — `>"$slipdir/<nonce>.$?"` — which is a redirection with no command word, so the shell

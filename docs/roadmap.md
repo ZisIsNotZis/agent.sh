@@ -18,7 +18,7 @@ The rest of that statement — labels, truncation, `/compact`, prefix matching, 
 
 One milestone and no intermediate gate, as the person set it.
 A package is not a milestone and this milestone is not split into "core" and "polish".
-Status: **running**.
+Status: **done, closed 2026-10-27.** The person closed it with: *"just make sure all your functionalities work, all goal reached, and can call it an end (README stuff)"*. The harness has no known reproducible bug — P7's ninth review pass returned `no-bug-found`, and `bash test/run.sh` holds 104 invariants — and every term below is checked by an observation that was re-run at closure: the invariant suite, the committed demo and its `check-prefix.sh`, and the free `--blocks` tour. No live API call was needed for that closure; the committed trajectory is the live evidence.
 
 The four terms it is accepted on, each decidable by an observation rather than by opinion:
 
@@ -32,7 +32,7 @@ The four terms it is accepted on, each decidable by an observation rather than b
 4. **Not doing**, so an omission reads as a decision: no tool-call protocol (that is the project), no sandbox, no tmux, no pty, no Python, no bash plugin, no streaming in v0, no binary payload to the model, no second mechanism for timers or todos, no live output while a block runs, no force-push and no rewriting of `aeb66c9`.
 
 **What acceptance is, in the person's words of 2026-10-27:** *"we're not doing a model, we're doing a harness, so as long as it has no bug, I'm happy"*. So there is no taste gate on this milestone: the trajectory is evidence, not a thing to be impressed by, and the question is whether the harness has a bug anyone can reproduce. An earlier version of this file asked whether the demo "impressed" him; that was the brief's framing, not his, and it is withdrawn.
-It is his to give at the milestone and no evidence line can supply it.
+It is his to give at the milestone and no evidence line can supply it; he gave it on 2026-10-27 in the words quoted in the status line. P7's reviewer verdict is the independent half and is not a substitute for it.
 
 ## Packages
 
@@ -77,7 +77,7 @@ The four questions `docs/design.md` left open are answered here.
 4. **`[status N]` is reported on every block, including a comment-only one.** It is the block's own `eval` status, so it is never a leftover.
    Cost: one line of noise per block, and a person who wanted silence from `#` blocks does not get it.
 
-Also decided, because the design left it to the manager: the trajectory stays chat-ml text (no JSON in the hot path), a block's text is transported by a nonce-delimited heredoc and never by `printf %q`, and the session directory lives at `$PWD/.session/<utc-stamp>/` and is ignored by git.
+Also decided, because the design left it to the manager: the trajectory stays chat-ml text (no JSON in the hot path), a block's text is written to its own file (never through `printf %q`, and since P8 not through a heredoc either), and the session directory lives at `$PWD/.session/<utc-stamp>/` and is ignored by git.
 
 ## Open, and who holds it
 
@@ -95,7 +95,7 @@ The section above registers the degree as `decide`, and a licence was the one en
 
 ### A runnable unattended example: not a separate decision
 
-It reads like something missing, but it is exactly what M1 delivers — `runs/<date>-demo/` with its regenerating command — so nothing here waits on him for it either, and `README.md` says it is absent rather than promised.
+It reads like something missing, but it is exactly what M1 delivers — `runs/2026-10-26-demo/` with its regenerating command — so nothing here waits on him for it either, and `README.md` points at it with the command that regenerates it.
 
 ## Evidence
 
@@ -103,3 +103,5 @@ It reads like something missing, but it is exactly what M1 delivers — `runs/<d
 - `docs/brief-m1.md` — the direction that fixed the milestone, the API facts measured on this machine, and the proposals root offered.
 - `probes/` — five runnable measurements; `probes/README.md` says what each proves.
 - `test/run.sh` — the invariant check P1 lands, and the one command the M1 acceptance names.
+- `runs/2026-10-26-demo/` — the committed live trajectory, its meter and requests, and `check-prefix.sh`, re-run at closure with 21 requests, 1 boundary, 19 checked, 0 failed.
+- `bash agent.sh --blocks examples/tour.sh` — the free run that exercises the same labels, `bgrun`/`bgwait` and truncation without an API call.
