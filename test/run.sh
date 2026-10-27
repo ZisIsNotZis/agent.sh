@@ -195,8 +195,14 @@ cat >"$work/cont.sh" <<'BLOCKS'
 echo hi \
 BLOCKS
 AGENT_SH_SESSION_ROOT=$work/cont bash agent.sh --blocks "$work/cont.sh" >"$work/cont.out" 2>&1
-hasin "$work/cont.out" '[status 2]' 'a block ending in a line continuation is refused, not silently redirected'
-hasin "$work/cont.out" 'line continuation' 'and the message says why'
+hasin "$work/cont.out" 'Bash: hi' 'a block ending in a line continuation still returns its output'
+hasin "$work/cont.out" '[status 0]' 'and its real status'
+
+cat >"$work/cont2.sh" <<'BLOCKS'
+echo hi # note: this ends in a backslash \
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/cont2 bash agent.sh --blocks "$work/cont2.sh" >"$work/cont2.out" 2>&1
+hasin "$work/cont2.out" 'Bash: hi' 'a trailing comment ending in a backslash is not a continuation'
 
 # a marker line in the task is text, not a message
 s9=$work/taskmark

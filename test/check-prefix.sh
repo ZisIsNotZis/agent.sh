@@ -69,7 +69,8 @@ if compgen -G "$reqdir/req.*.json" >/dev/null; then
     requests=$((requests + 1))
     sent_file=$(mktemp); rebuilt_file=$(mktemp)
     if ! jq -S . "$reqdir/req.$f.json" >"$sent_file" 2>/dev/null; then
-      printf 'turn %-4s UNREADABLE request file\n' "$f"; failed=1; continue
+      printf 'turn %-4s UNREADABLE request file\n' "$f"; failed=1
+      rm -f "$sent_file" "$rebuilt_file"; continue
     fi
     if bash "$agent" --replay "$reqdir" "$f" >"$rebuilt_file" 2>/dev/null &&
        cmp -s "$sent_file" "$rebuilt_file"; then
