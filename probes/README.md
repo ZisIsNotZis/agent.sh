@@ -1,6 +1,6 @@
 # probes/ — every measurement the design rests on, in runnable form
 
-These are not tests of `agent.sh`; there is no `agent.sh` yet. Each one is the experiment that decided a branch of the design tree, kept so a claim in `inbox/2026-10-22-design-tree.md` can be re-run instead of believed. A probe that no longer prints its expected lines makes the claim it supports stale, not wrong.
+These are not tests of `agent.sh`; `test/run.sh` is. Each one is the experiment that decided a branch of the design tree, kept so a claim in `docs/design.md` can be re-run instead of believed. A probe that no longer prints its expected lines makes the claim it supports stale, not wrong.
 
 Run them from the project root. They are short, they use `mktemp -d`, and they need only bash 5.1+, coreutils, and `jq` for the last one.
 

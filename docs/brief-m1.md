@@ -1,7 +1,7 @@
 kind:    direction
 from:    root
 spend:   person_attention, about 12 minutes; taste: none — the person has delegated the deciding; machine_time, idle class; money: metered on the person's `DEEPSEEK_API_KEY`, on the order of a few hundred thousand prompt tokens for the demo run, no device held
-id:      none — first contact; the design record it builds on is `inbox/2026-10-22-design-tree.md`
+id:      none — first contact; the design record it builds on is `docs/design.md`
 
 # The order: build the thing, decide everything yourself, prove it with a trajectory
 
@@ -62,7 +62,7 @@ The package split, the file layout, the prompt text, the exact protocol bytes, t
 
 ## Evidence
 
-- `inbox/2026-10-22-design-tree.md` — the settled design, the branches, the four questions it left open, and which of them are now yours to answer.
+- `docs/design.md` — the settled design, the branches, the four questions it left open, and which of them are now yours to answer.
 - `probes/` — five runnable measurements; `probes/README.md` says what each proves.
 - The API facts above were measured today with `curl` against `api.deepseek.com`; the cache numbers came from two requests sharing a 1242-token prefix.
 - pi's compact mechanism: `docs/compaction.md` in the installed pi package, sections "How It Works" and the before/after diagrams.
