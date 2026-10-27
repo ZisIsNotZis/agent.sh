@@ -1,2 +1,9 @@
--rwxrwx--- 1 z z 2256 Oct 26 22:05 depsort.pre-fix
--rwxrwx--- 1 z z  647 Oct 26 22:05 gen.sh.pre-fix
+dir=/tmp/tmp.XEZsst6UmU
+--- t1 rc=1
+./src/order.sh: line 5: 1: usage: order.sh FILE
+--- t2 rc=1
+./src/order.sh: line 5: 1: usage: order.sh FILE
+--- t3 rc=1
+./src/order.sh: line 5: 1: usage: order.sh FILE
+--- t4 rc=1
+./src/order.sh: line 5: 1: usage: order.sh FILE

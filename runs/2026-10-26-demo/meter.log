@@ -1,25 +1,23 @@
-meter: turn 1 prompt 1370 (hit 1152, miss 218), out 2952, cumulative prompt 1370
-meter: turn 2 prompt 2647 (hit 1280, miss 1367), out 548, cumulative prompt 4017
-meter: turn 3 prompt 3765 (hit 2560, miss 1205), out 2313, cumulative prompt 7782
-meter: turn 4 prompt 5459 (hit 3712, miss 1747), out 1132, cumulative prompt 13241
-meter: turn 5 prompt 5968 (hit 5376, miss 592), out 60, cumulative prompt 19209
-meter: turn 6 prompt 6076 (hit 5888, miss 188), out 517, cumulative prompt 25285
-compact: boundary 1 after 14 messages, prompt 6756 (hit 6016), summary 6674 chars
-meter: turn 7 prompt 2952 (hit 768, miss 2184), out 121, cumulative prompt 34993
-meter: turn 8 prompt 3155 (hit 2944, miss 211), out 61, cumulative prompt 38148
-meter: turn 9 prompt 4530 (hit 3072, miss 1458), out 439, cumulative prompt 42678
-meter: turn 10 prompt 5037 (hit 4480, miss 557), out 359, cumulative prompt 47715
-meter: turn 11 prompt 5756 (hit 4992, miss 764), out 181, cumulative prompt 53471
-meter: turn 12 prompt 5890 (hit 5632, miss 258), out 197, cumulative prompt 59361
-meter: turn 13 prompt 6074 (hit 5888, miss 186), out 948, cumulative prompt 65435
-compact: boundary 2 after 29 messages, prompt 6511 (hit 6016), summary 7110 chars
-meter: turn 14 prompt 3175 (hit 768, miss 2407), out 382, cumulative prompt 75121
-meter: turn 15 prompt 3961 (hit 3072, miss 889), out 176, cumulative prompt 79082
-meter: turn 16 prompt 4128 (hit 3840, miss 288), out 329, cumulative prompt 83210
-meter: turn 17 prompt 4705 (hit 4096, miss 609), out 348, cumulative prompt 87915
-meter: turn 18 prompt 6975 (hit 4608, miss 2367), out 188, cumulative prompt 94890
-compact: boundary 3 after 41 messages, prompt 7536 (hit 6912), summary 4780 chars
-meter: turn 19 prompt 2473 (hit 768, miss 1705), out 750, cumulative prompt 104899
-meter: turn 20 prompt 3822 (hit 2432, miss 1390), out 16, cumulative prompt 108721
+meter: turn 1 prompt 1202 (hit 768, miss 434), out 96, cumulative prompt 1202
+meter: turn 2 prompt 1344 (hit 1152, miss 192), out 252, cumulative prompt 2546
+meter: turn 3 prompt 1651 (hit 1280, miss 371), out 99, cumulative prompt 4197
+meter: turn 4 prompt 1902 (hit 1536, miss 366), out 71, cumulative prompt 6099
+meter: turn 5 prompt 3429 (hit 1792, miss 1637), out 72, cumulative prompt 9528
+meter: turn 6 prompt 3645 (hit 3328, miss 317), out 73, cumulative prompt 13173
+meter: turn 7 prompt 4840 (hit 3584, miss 1256), out 1081, cumulative prompt 18013
+meter: turn 8 prompt 5113 (hit 4736, miss 377), out 76, cumulative prompt 23126
+meter: turn 9 prompt 5344 (hit 4992, miss 352), out 2175, cumulative prompt 28470
+meter: turn 10 prompt 6337 (hit 5248, miss 1089), out 886, cumulative prompt 34807
+compact: boundary 1 after 22 messages, prompt 7368 (hit 6272), summary 3880 chars
+meter: turn 11 prompt 2049 (hit 768, miss 1281), out 118, cumulative prompt 44224
+meter: turn 12 prompt 2295 (hit 2048, miss 247), out 71, cumulative prompt 46519
+meter: turn 13 prompt 2503 (hit 2176, miss 327), out 23, cumulative prompt 49022
+meter: turn 14 prompt 3973 (hit 2432, miss 1541), out 222, cumulative prompt 52995
+meter: turn 15 prompt 4257 (hit 3968, miss 289), out 138, cumulative prompt 57252
+meter: turn 16 prompt 4589 (hit 4224, miss 365), out 78, cumulative prompt 61841
+meter: turn 17 prompt 4714 (hit 4480, miss 234), out 477, cumulative prompt 66555
+meter: turn 18 prompt 5337 (hit 4608, miss 729), out 467, cumulative prompt 71892
+meter: turn 19 prompt 5809 (hit 5248, miss 561), out 75, cumulative prompt 77701
+meter: turn 20 prompt 6023 (hit 5760, miss 263), out 148, cumulative prompt 83724
 agent.sh: the block held nothing to run, so the run ends here (turn 20)
---- 20 turns, 2 polls, 108721 spent prompt tokens, session /home/z/vibe/agent.sh/runs/2026-10-26-demo/session
+--- 20 turns, 1 polls, 83724 spent prompt tokens, session /home/z/vibe/agent.sh/runs/2026-10-26-demo/session

@@ -1,5 +1,2 @@
-good order -> [edge a->b violated (b=2, a=1)]
-reversed order -> []
-fake cycle -> [cycle uses edge that does not exist: b a]
-bash: eval: line 355: syntax error near unexpected token `newline'
-bash: eval: line 355: `diff <(./depsort /tmp/t1.txt) <(./depsort < /tmp/t1.txt) && echo "stdin==file OK"</｜｜DSML｜｜ parameter>'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/3.sh: line 5: syntax error near unexpected token `newline'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/3.sh: line 5: `echo "===== report wc ====="; wc -l report.txt</｜｜DSML｜｜ parameter>'

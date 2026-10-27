@@ -1,65 +1,16 @@
-Usage: awk [POSIX or GNU style options] -f progfile [--] file ...
-Usage: awk [POSIX or GNU style options] [--] 'program' file ...
-POSIX options:		GNU long options: (standard)
-	-f progfile		--file=progfile
-	-F fs			--field-separator=fs
-	-v var=val		--assign=var=val
-Short options:		GNU long options: (extensions)
-	-b			--characters-as-bytes
-	-c			--traditional
-	-C			--copyright
-	-d[file]		--dump-variables[=file]
-	-D[file]		--debug[=file]
-	-e 'program-text'	--source='program-text'
-	-E file			--exec=file
-	-g			--gen-pot
-	-h			--help
-	-i includefile		--include=includefile
-	-I			--trace
-	-l library		--load=library
-	-L[fatal|invalid|no-ext]	--lint[=fatal|invalid|no-ext]
-	-M			--bignum
-	-N			--use-lc-numeric
-	-n			--non-decimal-data
-	-o[file]		--pretty-print[=file]
-	-O			--optimize
-	-p[file]		--profile[=file]
-	-P			--posix
-	-r			--re-interval
-	-s			--no-optimize
-	-S			--sandbox
-	-t			--lint-old
-	-V			--version
-
-To report bugs, use the `gawkbug' program.
-For full instructions, see the node `Bugs' in `gawk.info'
-which is section `Reporting Problems and Bugs' in the
-printed version.  This same information may be found at
-https://www.gnu.org/software/gawk/manual/html_node/Bugs.html.
-PLEASE do NOT try to report bugs by posting in comp.lang.awk,
-or by using a web forum such as Stack Overflow.
-
-gawk is a pattern scanning and processing language.
-By default it reads standard input and writes standard output.
-
-Examples:
-	awk '{ sum += $1 }; END { print sum }' file
-	awk -F: '{ print $1 }' /etc/passwd
-cycle: a c b a
-cycle3 status=1
-cycle: a a
-selfloop status=1
-q
-p
-single status=0
-d
-b
-a
-c
-e
-4 2 0
-p2 p1
-p2 p2
----
-bash: eval: line 170: syntax error near unexpected token `newline'
-bash: eval: line 170: `./gen.sh 8</｜｜DSML｜｜ parameter>'
+total 20
+drwxrwx--- 1 z z    42 Oct 27 16:25 .
+drwxrwx--- 1 z z   156 Oct 27 16:25 ..
+-rwxrwx--- 1 z z   700 Oct 27 16:25 bench.sh
+-rw-rw---- 1 z z 13128 Oct 27 16:25 report.txt
+drwxrwx--- 1 z z    32 Oct 27 16:25 src
+=== src ===
+total 8
+drwxrwx--- 1 z z   32 Oct 27 16:25 .
+drwxrwx--- 1 z z   42 Oct 27 16:25 ..
+-rwxrwx--- 1 z z  830 Oct 27 16:25 order.sh
+-rwxrwx--- 1 z z 2695 Oct 27 16:25 suite.sh
+=== bench ===
+-rwxrwx--- 1 z z 700 Oct 27 16:25 bench.sh
+/usr/bin/bash
+GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)

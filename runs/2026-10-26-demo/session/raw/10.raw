@@ -1,2 +1,2 @@
-bash: eval: line 321: syntax error near unexpected token `newline'
-bash: eval: line 321: `echo '=== diff depsort ===' && diff -u depsort.pre-fix depsort; echo '=== diff gen.sh ===' && diff -u gen.sh.pre-fix gen.sh; echo '=== head of END ===' && sed -n '7,10p;42,46p' depsort && sed -n '6p' gen.sh</parameter>'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/10.sh: line 1: syntax error near unexpected token `('
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/10.sh: line 1: `Bench report is in (120013 ms wall, 0.0 edges/ms). Now the bug is clear: `order.sh` has no cycle branch — cyclic inputs just emit a partial order with exit 0. I'll rewrite it with Kahn plus a real cycle extractor.'

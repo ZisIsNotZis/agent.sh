@@ -1,3 +1,2 @@
-NF == 0 { next }
-NF != 2 { printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; err = 1; printf "depsort: bad line %d: %s\n", NR, $0 > "/dev/stderr"; next }
-{
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/13.sh: line 1: syntax error near unexpected token `newline'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/13.sh: line 1: `<｜｜DSML｜｜ calls>'

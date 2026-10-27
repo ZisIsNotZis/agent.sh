@@ -1,17 +1,1 @@
-/home/z/vibe/agent.sh/runs/2026-10-26-demo/work
-GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
-GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
-d
-b
-a
-c
-status=0
-cycle: a b a
-status=1
-empty status=0
-b
-a
-x
-dup status=0
-bash: eval: line 188: syntax error near unexpected token `newline'
-bash: eval: line 188: `printf 'a b\nb c\nc a\nd e\n' | ./depsort; echo "cycle status=$?"</｜｜DSML｜｜ parameter>'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/1.sh: line 14: unexpected EOF while looking for matching `''

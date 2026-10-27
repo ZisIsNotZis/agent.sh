@@ -1,0 +1,401 @@
+case 001 FAIL  p3 p5 p2 p5 p5 p2 p2 p3 p4 p5 p1 p4 p1 p4 
+case 002 PASS
+case 003 PASS
+case 004 FAIL  p3 p1 p1 p2 p1 p3 p3 p4 
+case 005 PASS
+case 006 PASS
+case 007 PASS
+case 008 PASS
+case 009 FAIL  p3 p5 p5 p4 p2 p4 p3 p4 p1 p3 p1 p5 p2 p1 p4 p5 
+case 010 FAIL  p3 p4 p3 p2 p5 p3 p5 p3 p2 p1 p1 p5 p1 p3 
+case 011 FAIL  p3 p5 p1 p2 p4 p5 p1 p5 p3 p1 p5 p1 
+case 012 FAIL  p1 p3 p1 p3 p5 p1 p3 p5 p4 p5 p4 p5 
+case 013 PASS
+case 014 FAIL  p5 p2 p2 p5 p4 p1 p1 p2 p3 p4 
+case 015 PASS
+case 016 FAIL  p3 p4 p4 p5 p4 p3 p5 p3 p1 p5 p2 p5 p5 p3 
+case 017 FAIL  p3 p1 p4 p2 p2 p3 p2 p4 p5 p1 p4 p2 p2 p3 p1 p3 
+case 018 FAIL  p4 p2 p5 p1 p5 p3 p2 p4 p4 p5 p2 p3 
+case 019 FAIL  p2 p3 p2 p5 p2 p3 p2 p4 p5 p2 
+case 020 FAIL  p2 p5 p4 p5 p1 p2 p1 p2 p5 p1 p5 p1 
+case 021 FAIL  p3 p4 p2 p5 p4 p5 p3 p4 p5 p2 p4 p3 
+case 022 FAIL  p5 p2 p4 p5 p2 p4 p3 p4 p3 p2 p1 p5 p1 p2 
+case 023 FAIL  p4 p5 p2 p4 p5 p2 p4 p5 
+case 024 PASS
+case 025 PASS
+case 026 PASS
+case 027 FAIL  p5 p1 p4 p3 p2 p3 p4 p1 p1 p2 p4 p2 p3 p4 
+case 028 PASS
+case 029 FAIL  p5 p3 p1 p3 p4 p5 p3 p4 p4 p1 p4 p5 p3 p1 
+case 030 PASS
+case 031 PASS
+case 032 FAIL  p4 p3 p4 p1 p1 p2 p2 p3 p3 p1 
+case 033 PASS
+case 034 FAIL  p2 p3 p3 p1 p5 p4 p1 p2 p4 p2 p1 p3 
+case 035 PASS
+case 036 FAIL  p1 p5 p3 p4 p4 p1 p1 p5 p2 p3 p4 p2 p1 p2 
+case 037 PASS
+case 038 FAIL  p2 p1 p1 p4 p3 p4 p3 p2 p1 p3 p1 p3 p2 p4 
+case 039 FAIL  p5 p3 p3 p1 p2 p5 p5 p1 p5 p1 p5 p2 
+case 040 PASS
+case 041 FAIL  p2 p1 p1 p2 p1 p3 p5 p1 p4 p3 p4 p5 
+case 042 PASS
+case 043 FAIL  p5 p4 p4 p5 p5 p2 
+case 044 FAIL  p1 p2 p2 p3 p3 p2 p2 p3 p3 p5 p2 p3 p2 p1 
+case 045 FAIL  p1 p3 p3 p1 p5 p3 p3 p2 p2 p3 
+case 046 PASS
+case 047 PASS
+case 048 FAIL  p2 p5 p1 p2 p5 p2 p4 p1 p1 p2 p5 p1 p2 p5 p5 p1 
+case 049 FAIL  p3 p4 p5 p2 p2 p3 p4 p5 p5 p1 p4 p2 p2 p3 
+case 050 PASS
+case 051 FAIL  p1 p5 p4 p3 p1 p2 p5 p4 p3 p2 p3 p1 
+case 052 FAIL  p1 p5 p5 p4 p5 p1 p3 p1 p4 p5 
+case 053 FAIL  p5 p2 p1 p2 p4 p5 p2 p4 p4 p1 
+case 054 PASS
+case 055 PASS
+case 056 PASS
+case 057 PASS
+case 058 PASS
+case 059 PASS
+case 060 PASS
+case 061 PASS
+case 062 PASS
+case 063 PASS
+case 064 PASS
+case 065 PASS
+case 066 PASS
+case 067 PASS
+case 068 FAIL  p4 p3 p1 p5 p3 p2 p1 p5 p1 p5 p5 p1 p2 p3 
+case 069 FAIL  p4 p5 p4 p1 p1 p4 p4 p5 p3 p5 
+case 070 FAIL  p1 p3 p5 p1 p3 p5 p1 p2 p3 p5 p5 p3 p4 p3 
+case 071 FAIL  p2 p1 p2 p3 p2 p3 p2 p5 p3 p4 p3 p4 p4 p2 p5 p2 
+case 072 PASS
+case 073 PASS
+case 074 PASS
+case 075 PASS
+case 076 PASS
+case 077 FAIL  p3 p5 p1 p4 p4 p3 p5 p4 p4 p1 p5 p1 
+case 078 PASS
+case 079 PASS
+case 080 PASS
+case 081 FAIL  p4 p5 p1 p4 p5 p1 p5 p4 p1 p3 
+case 082 PASS
+case 083 FAIL  p4 p2 p4 p5 p3 p2 p4 p1 p5 p2 p1 p4 
+case 084 PASS
+case 085 PASS
+case 086 FAIL  p2 p1 p5 p2 p5 p4 p5 p4 p4 p1 p1 p2 p5 p4 p3 p5 
+case 087 FAIL  p1 p2 p2 p1 
+case 088 FAIL  p4 p5 p3 p1 p1 p2 p2 p1 p1 p5 
+case 089 PASS
+case 090 PASS
+case 091 FAIL  p2 p3 p5 p1 p2 p5 p3 p4 p2 p4 p5 p3 p1 p2 
+case 092 PASS
+case 093 PASS
+case 094 FAIL  p4 p1 p5 p1 p3 p5 p1 p2 p5 p1 p1 p3 
+case 095 FAIL  p2 p4 p1 p2 p4 p3 p1 p2 p3 p4 p1 p2 
+case 096 FAIL  p3 p5 p5 p1 p1 p2 p2 p5 p2 p4 p3 p4 
+case 097 PASS
+case 098 PASS
+case 099 PASS
+case 100 PASS
+case 101 PASS
+case 102 PASS
+case 103 FAIL  p3 p1 p3 p4 p1 p5 p1 p5 p5 p1 p5 p3 p5 p4 p5 p3 
+case 104 PASS
+case 105 FAIL  p1 p3 p4 p2 p3 p2 p2 p3 p1 p3 
+case 106 FAIL  p2 p3 p3 p4 p4 p3 p4 p3 p1 p2 p3 p5 
+case 107 PASS
+case 108 PASS
+case 109 FAIL  p3 p2 p4 p2 p4 p2 p4 p2 p4 p2 p2 p5 p5 p4 
+case 110 PASS
+case 111 FAIL  p3 p4 p1 p2 p3 p2 p3 p4 p3 p5 p4 p3 p4 p5 p5 p2 
+case 112 FAIL  p1 p2 p3 p4 p3 p1 p2 p3 p5 p2 p1 p3 p3 p2 
+case 113 PASS
+case 114 FAIL  p4 p5 p4 p1 p2 p5 p5 p3 p2 p3 p5 p1 p3 p5 
+case 115 FAIL  p2 p4 p4 p5 p5 p3 p2 p4 p5 p2 p3 p4 p1 p2 p5 p2 
+case 116 PASS
+case 117 PASS
+case 118 PASS
+case 119 PASS
+case 120 PASS
+case 121 PASS
+case 122 FAIL  p3 p5 p1 p5 p5 p1 p5 p3 p4 p2 
+case 123 FAIL  p5 p2 p3 p2 p5 p3 p3 p4 p4 p3 p5 p1 p5 p1 p2 p3 
+case 124 PASS
+case 125 FAIL  p2 p4 p2 p4 p3 p2 p4 p2 
+case 126 PASS
+case 127 PASS
+case 128 FAIL  p5 p1 p2 p4 p4 p5 p2 p1 p5 p2 p2 p5 p2 p5 
+case 129 FAIL  p5 p2 p2 p1 p2 p3 p5 p2 p5 p3 p3 p5 
+case 130 PASS
+case 131 FAIL  p2 p5 p5 p2 p3 p1 p4 p2 p2 p5 p4 p3 p3 p5 
+case 132 FAIL  p5 p3 p5 p4 p1 p2 p4 p5 p2 p3 p4 p2 p4 p5 p2 p5 
+case 133 PASS
+case 134 PASS
+case 135 FAIL  p1 p5 p4 p5 p4 p5 p5 p4 p1 p2 p2 p5 p1 p5 p2 p4 
+case 136 FAIL  p1 p3 p1 p4 p4 p5 p5 p1 p5 p2 p5 p2 p1 p2 
+case 137 PASS
+case 138 PASS
+case 139 FAIL  p2 p4 p2 p3 p2 p1 p3 p4 p2 p3 p2 p4 p3 p1 p1 p2 
+case 140 PASS
+case 141 FAIL  p2 p4 p2 p4 p4 p1 p1 p2 p4 p1 p3 p2 p1 p3 
+case 142 PASS
+case 143 PASS
+case 144 PASS
+case 145 PASS
+case 146 PASS
+case 147 PASS
+case 148 FAIL  p3 p1 p5 p4 p4 p3 p3 p4 p1 p3 p1 p5 
+case 149 PASS
+case 150 PASS
+case 151 PASS
+case 152 PASS
+case 153 FAIL  p4 p5 p5 p3 p4 p1 p3 p2 p5 p3 p4 p1 p2 p5 
+case 154 FAIL  p1 p2 p4 p5 p4 p5 p5 p1 p2 p3 p3 p4 p2 p3 p1 p2 
+case 155 FAIL  p3 p4 p4 p3 p4 p5 p2 p4 
+case 156 PASS
+case 157 PASS
+case 158 PASS
+case 159 PASS
+case 160 PASS
+case 161 PASS
+case 162 PASS
+case 163 PASS
+case 164 PASS
+case 165 FAIL  p5 p3 p4 p2 p5 p1 p5 p2 p5 p1 p5 p4 p3 p5 
+case 166 FAIL  p2 p3 p1 p5 p2 p1 p3 p4 p4 p1 p1 p5 p5 p1 
+case 167 FAIL  p5 p3 p5 p2 p1 p5 p3 p1 p3 p4 p2 p5 
+case 168 FAIL  p4 p5 p4 p2 p2 p4 p5 p4 p2 p4 p2 p3 p4 p1 
+case 169 PASS
+case 170 FAIL  p4 p5 p2 p3 p4 p5 p3 p5 p1 p2 p1 p2 p5 p1 
+case 171 FAIL  p3 p4 p1 p2 p4 p2 p5 p1 p5 p1 p2 p1 p1 p4 
+case 172 PASS
+case 173 PASS
+case 174 PASS
+case 175 FAIL  p2 p3 p1 p3 p4 p5 p4 p3 p5 p3 p3 p4 p2 p1 
+case 176 PASS
+case 177 PASS
+case 178 PASS
+case 179 FAIL  p3 p4 p1 p4 p4 p3 p5 p4 p4 p5 p1 p5 p1 p3 p4 p3 
+case 180 FAIL  p1 p2 p5 p4 p3 p1 p4 p5 p1 p3 
+case 181 FAIL  p1 p5 p2 p1 p3 p4 p4 p5 p1 p5 p4 p3 p3 p2 
+case 182 PASS
+case 183 PASS
+case 184 PASS
+case 185 PASS
+case 186 PASS
+case 187 PASS
+case 188 PASS
+case 189 FAIL  p5 p3 p4 p2 p1 p2 p2 p4 p2 p3 
+case 190 PASS
+case 191 PASS
+case 192 PASS
+case 193 PASS
+case 194 PASS
+case 195 FAIL  p5 p1 p3 p5 p3 p4 p1 p3 p5 p3 p2 p3 p1 p2 
+case 196 PASS
+case 197 PASS
+case 198 FAIL  p1 p5 p2 p4 p1 p3 p3 p2 p5 p3 p2 p5 p2 p1 
+case 199 FAIL  p1 p5 p3 p2 p3 p5 p1 p2 p5 p1 p2 p3 
+case 200 FAIL  p1 p3 p5 p4 p3 p5 p4 p5 p5 p4 p3 p2 
+case 201 FAIL  p1 p2 p4 p5 p4 p3 p2 p1 p5 p1 p5 p2 
+case 202 PASS
+case 203 PASS
+case 204 FAIL  p3 p4 p1 p5 p2 p3 p2 p1 p3 p2 p4 p2 p2 p5 
+case 205 PASS
+case 206 FAIL  p1 p2 p5 p4 p3 p5 p2 p1 p4 p5 p5 p1 p4 p5 
+case 207 FAIL  p2 p5 p1 p3 p4 p2 p4 p1 p2 p3 p1 p5 p4 p5 p3 p1 
+case 208 FAIL  p4 p5 p4 p2 p2 p1 p3 p4 p1 p2 p3 p1 p4 p3 p1 p2 
+case 209 PASS
+case 210 PASS
+case 211 FAIL  p3 p4 p1 p2 p2 p1 p2 p3 
+case 212 PASS
+case 213 FAIL  p5 p4 p1 p2 p4 p1 p3 p4 p5 p3 p2 p1 p2 p3 p5 p1 
+case 214 FAIL  p5 p2 p1 p4 p2 p5 p4 p2 
+case 215 FAIL  p3 p2 p5 p2 p4 p2 p2 p1 p1 p2 
+case 216 FAIL  p3 p1 p2 p3 p1 p5 p4 p2 p2 p4 
+case 217 FAIL  p2 p1 p3 p4 p5 p1 p2 p3 p1 p5 p5 p4 p1 p2 
+case 218 FAIL  p3 p4 p1 p2 p3 p2 p5 p2 p1 p2 p2 p4 p2 p3 
+case 219 FAIL  p2 p1 p3 p5 p1 p2 
+case 220 PASS
+case 221 PASS
+case 222 FAIL  p5 p1 p3 p4 p1 p5 p1 p2 
+case 223 PASS
+case 224 FAIL  p5 p3 p2 p1 p1 p5 p2 p4 p3 p1 p4 p5 p4 p5 
+case 225 PASS
+case 226 PASS
+case 227 PASS
+case 228 PASS
+case 229 FAIL  p3 p2 p5 p1 p1 p3 p1 p5 p1 p4 
+case 230 FAIL  p4 p5 p2 p5 p4 p5 p4 p2 p5 p4 p3 p4 p1 p2 p4 p5 
+case 231 PASS
+case 232 PASS
+case 233 FAIL  p4 p2 p2 p5 p5 p1 p4 p2 p5 p4 p2 p5 p5 p1 
+case 234 PASS
+case 235 FAIL  p1 p2 p4 p3 p5 p2 p2 p3 p2 p1 p1 p3 
+case 236 FAIL  p4 p2 p2 p3 p3 p2 p4 p3 
+case 237 PASS
+case 238 PASS
+case 239 PASS
+case 240 PASS
+case 241 FAIL  p2 p3 p3 p4 p4 p1 p5 p2 p5 p1 p1 p5 p4 p2 p3 p5 
+case 242 FAIL  p5 p4 p4 p2 p3 p4 p2 p1 p2 p3 p1 p2 p3 p1 p3 p2 
+case 243 FAIL  p3 p1 p4 p1 p1 p4 p3 p5 p2 p3 p5 p2 p1 p2 
+case 244 FAIL  p1 p5 p5 p1 p1 p5 p2 p5 p1 p4 p3 p2 p1 p3 p1 p4 
+case 245 PASS
+case 246 FAIL  p1 p2 p4 p2 p3 p5 p1 p2 p2 p4 p2 p1 p5 p1 
+case 247 FAIL  p1 p4 p4 p2 p3 p1 p1 p2 p4 p5 p5 p3 p2 p5 p3 p2 
+case 248 FAIL  p1 p5 p1 p2 p3 p2 p2 p3 p5 p1 
+case 249 FAIL  p5 p1 p5 p1 p4 p2 p5 p1 p2 p3 p2 p4 
+case 250 PASS
+case 251 PASS
+case 252 PASS
+case 253 PASS
+case 254 PASS
+case 255 PASS
+case 256 FAIL  p5 p1 p4 p1 p4 p5 p2 p3 p4 p3 p1 p4 p2 p5 
+case 257 FAIL  p4 p1 p4 p5 p3 p2 p2 p3 p4 p5 p1 p2 
+case 258 PASS
+case 259 FAIL  p1 p3 p1 p5 p3 p2 p5 p1 p2 p3 p5 p3 p4 p5 
+case 260 FAIL  p1 p2 p2 p1 p5 p2 
+case 261 FAIL  p4 p2 p3 p4 p1 p2 p5 p3 p2 p3 p3 p5 
+case 262 FAIL  p5 p1 p1 p4 p3 p4 p1 p5 p2 p5 p2 p1 p2 p4 p4 p2 
+case 263 FAIL  p5 p4 p4 p2 p5 p4 p4 p3 p4 p5 p4 p2 p2 p3 p4 p2 
+case 264 FAIL  p5 p4 p4 p1 p4 p1 p5 p2 p5 p4 p3 p4 p4 p5 
+case 265 PASS
+case 266 PASS
+case 267 PASS
+case 268 PASS
+case 269 PASS
+case 270 PASS
+case 271 FAIL  p5 p2 p1 p5 p4 p3 p4 p5 p5 p1 
+case 272 PASS
+case 273 FAIL  p1 p3 p5 p3 p5 p3 p2 p5 p1 p2 p5 p2 p3 p4 p5 p2 
+case 274 PASS
+case 275 PASS
+case 276 FAIL  p4 p2 p3 p2 p2 p5 p4 p1 p5 p2 p3 p1 p3 p4 p2 p5 
+case 277 FAIL  p2 p1 p4 p3 p4 p5 p1 p2 p4 p2 
+case 278 FAIL  p5 p2 p3 p4 p1 p5 p4 p5 p1 p3 p5 p3 p1 p3 p1 p4 
+case 279 FAIL  p5 p1 p4 p1 p1 p2 p3 p1 p2 p3 p3 p4 p4 p1 
+case 280 PASS
+case 281 PASS
+case 282 PASS
+case 283 FAIL  p1 p5 p5 p4 p4 p1 p3 p4 
+case 284 PASS
+case 285 FAIL  p1 p4 p5 p1 p5 p2 p1 p5 
+case 286 FAIL  p2 p5 p4 p2 p2 p3 p2 p4 p1 p5 
+case 287 PASS
+case 288 FAIL  p1 p5 p1 p4 p4 p1 p3 p4 
+case 289 PASS
+case 290 PASS
+case 291 PASS
+case 292 PASS
+case 293 PASS
+case 294 PASS
+case 295 PASS
+case 296 FAIL  p1 p3 p3 p4 p2 p3 p4 p2 p3 p5 p2 p3 p5 p3 
+case 297 FAIL  p1 p2 p1 p5 p5 p4 p5 p4 p3 p5 p5 p1 p1 p2 p1 p2 
+case 298 PASS
+case 299 PASS
+case 300 PASS
+case 301 PASS
+case 302 PASS
+case 303 FAIL  p5 p2 p4 p5 p5 p4 p1 p2 p4 p5 
+case 304 FAIL  p3 p1 p1 p3 p2 p3 p1 p4 p5 p4 p2 p5 
+case 305 PASS
+case 306 FAIL  p5 p2 p4 p5 p3 p2 p1 p3 p3 p4 p2 p4 
+case 307 FAIL  p4 p1 p1 p4 p1 p2 
+case 308 FAIL  p2 p1 p3 p2 p4 p1 p1 p2 
+case 309 PASS
+case 310 FAIL  p2 p3 p1 p3 p2 p3 p4 p3 p3 p1 p2 p5 p5 p1 
+case 311 FAIL  p3 p2 p5 p1 p4 p2 p2 p4 p5 p1 p4 p2 p1 p4 p5 p1 
+case 312 FAIL  p1 p3 p4 p2 p2 p3 p5 p1 p3 p4 p5 p3 p1 p4 p4 p5 
+case 313 PASS
+case 314 FAIL  p2 p4 p5 p4 p2 p3 p2 p3 p3 p2 
+case 315 PASS
+case 316 PASS
+case 317 FAIL  p3 p1 p3 p4 p4 p5 p5 p4 p1 p3 p2 p3 p5 p2 p3 p4 
+case 318 PASS
+case 319 FAIL  p1 p5 p2 p1 p5 p3 p1 p4 p3 p5 p2 p3 p4 p5 
+case 320 FAIL  p5 p2 p5 p1 p1 p5 p1 p2 p5 p3 p2 p3 p4 p3 p1 p2 
+case 321 FAIL  p4 p5 p1 p2 p2 p4 p4 p2 p5 p2 
+case 322 FAIL  p5 p4 p3 p5 p1 p2 p2 p1 p5 p3 
+case 323 FAIL  p4 p5 p2 p3 p1 p4 p4 p1 
+case 324 FAIL  p2 p4 p1 p4 p2 p1 p5 p1 p2 p3 p4 p2 p3 p5 
+case 325 FAIL  p4 p1 p5 p3 p3 p1 p2 p1 p3 p2 p1 p5 
+case 326 FAIL  p5 p4 p5 p3 p4 p1 p3 p5 p2 p1 p3 p5 p5 p2 
+case 327 FAIL  p3 p4 p5 p1 p1 p3 p1 p3 p3 p5 p2 p3 
+case 328 PASS
+case 329 FAIL  p5 p1 p4 p5 p1 p4 p2 p1 p4 p5 p2 p5 p2 p4 
+case 330 PASS
+case 331 FAIL  p2 p3 p1 p4 p1 p3 p1 p5 p5 p1 p3 p4 p3 p4 p3 p4 
+case 332 FAIL  p4 p5 p3 p1 p3 p2 p2 p3 p5 p1 p4 p2 p3 p4 p2 p3 
+case 333 FAIL  p4 p2 p3 p1 p2 p1 p3 p1 p1 p2 
+case 334 PASS
+case 335 FAIL  p1 p2 p2 p4 p3 p4 p1 p5 p3 p4 p4 p1 
+case 336 PASS
+case 337 PASS
+case 338 FAIL  p3 p4 p2 p3 p3 p5 p1 p4 p1 p4 p4 p3 p3 p4 
+case 339 PASS
+case 340 FAIL  p1 p5 p1 p2 p5 p1 p3 p4 p2 p3 p2 p3 p1 p3 
+case 341 PASS
+case 342 PASS
+case 343 PASS
+case 344 PASS
+case 345 PASS
+case 346 PASS
+case 347 PASS
+case 348 PASS
+case 349 PASS
+case 350 PASS
+case 351 FAIL  p5 p2 p1 p2 p5 p1 p4 p1 p2 p4 p4 p2 
+case 352 FAIL  p3 p5 p1 p2 p2 p1 p3 p1 p2 p4 p1 p2 p4 p5 p4 p1 
+case 353 PASS
+case 354 FAIL  p1 p2 p3 p2 p5 p2 p2 p4 p4 p5 p1 p2 
+case 355 FAIL  p5 p1 p3 p1 p4 p2 p2 p4 p1 p2 p2 p3 p5 p4 
+case 356 FAIL  p1 p4 p5 p4 p4 p1 p1 p4 p5 p1 p2 p4 p3 p2 p2 p3 
+case 357 PASS
+case 358 PASS
+case 359 FAIL  p4 p5 p2 p5 p4 p5 p5 p4 
+case 360 FAIL  p4 p3 p4 p5 p3 p4 p5 p1 p1 p2 p2 p5 
+case 361 PASS
+case 362 PASS
+case 363 FAIL  p2 p1 p5 p1 p2 p3 p3 p2 p1 p2 p5 p1 
+case 364 FAIL  p1 p5 p2 p3 p4 p3 p4 p5 p2 p3 p5 p1 p1 p2 
+case 365 FAIL  p1 p5 p1 p3 p2 p3 p3 p2 p3 p4 p3 p2 p4 p5 p5 p2 
+case 366 PASS
+case 367 PASS
+case 368 FAIL  p1 p4 p3 p2 p1 p2 p2 p3 p1 p5 p2 p5 p4 p1 
+case 369 FAIL  p5 p1 p3 p4 p1 p4 p5 p1 p3 p2 p2 p3 p3 p4 p5 p1 
+case 370 PASS
+case 371 PASS
+case 372 PASS
+case 373 FAIL  p3 p4 p5 p4 p1 p5 p4 p3 p5 p2 p5 p1 p1 p5 p5 p1 
+case 374 FAIL  p2 p4 p4 p5 p5 p1 p4 p3 p3 p4 p4 p2 p2 p5 
+case 375 FAIL  p5 p4 p1 p2 p4 p5 
+case 376 FAIL  p3 p4 p4 p5 p2 p4 p5 p1 p2 p3 p5 p2 p2 p5 p3 p4 
+case 377 PASS
+case 378 FAIL  p2 p5 p4 p5 p4 p2 p1 p2 p2 p3 p3 p2 p3 p4 p3 p4 
+case 379 PASS
+case 380 FAIL  p3 p4 p2 p1 p1 p2 p4 p1 p4 p5 p1 p4 p3 p5 p1 p5 
+case 381 FAIL  p1 p2 p1 p3 p5 p3 p4 p5 p4 p1 p4 p1 p2 p4 p5 p2 
+case 382 FAIL  p4 p2 p2 p5 p1 p5 p1 p3 p2 p4 p4 p5 p5 p3 p3 p1 
+case 383 PASS
+case 384 FAIL  p2 p5 p5 p3 p4 p5 p4 p3 p3 p2 p3 p5 p5 p1 
+case 385 PASS
+case 386 PASS
+case 387 FAIL  p1 p5 p1 p3 p2 p3 p5 p1 p4 p5 p1 p5 
+case 388 FAIL  p3 p4 p2 p5 p2 p4 p4 p3 p3 p5 p4 p1 p2 p5 
+case 389 PASS
+case 390 PASS
+case 391 PASS
+case 392 PASS
+case 393 PASS
+case 394 FAIL  p2 p3 p1 p2 p3 p5 p2 p3 p5 p3 p2 p4 p1 p2 p5 p4 
+case 395 FAIL  p3 p4 p5 p1 p5 p1 p2 p5 p1 p2 p5 p1 p1 p5 
+case 396 FAIL  p2 p3 p4 p2 p2 p5 p5 p4 p5 p1 p2 p3 p1 p2 
+case 397 FAIL  p1 p2 p2 p5 p5 p1 p3 p4 p3 p5 
+case 398 FAIL  p3 p2 p2 p1 p4 p5 p5 p4 p4 p2 p5 p3 p4 p5 p1 p2 
+case 399 PASS
+case 400 PASS
+SUMMARY total=400 pass=215 fail=185

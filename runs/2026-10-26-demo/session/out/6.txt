@@ -1,1 +1,64 @@
-job 1 exited 1 — note: 300-case depsort run
+job 1 started, pid 3498211, log /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/1/log
+=== order.sh ===
+#!/usr/bin/env bash
+# order.sh — print one valid build order for the dependency pairs in $1 ("a b" means a needs b).
+# Exit 0 with the order, or exit 1 printing `cycle: <packages>` when the input has a cycle.
+set -u
+file=${1:?usage: order.sh FILE}
+
+# TODO: the cycle branch is missing. A cyclic input gets a partial order and a zero status,
+# which is why report.txt has failures in it.
+awk '
+  { if (!($1 in need)) { need[$1] = 0 }; if (!($2 in need)) { need[$2] = 0 }
+    if (($1 SUBSEP $2) in edge) next
+    edge[$1 SUBSEP $2] = 1; need[$1]++ }
+  END {
+    n = 0
+    for (p in need) if (need[p] == 0) queue[++n] = p
+    head = 1
+    while (head <= n) {
+      p = queue[head++]; print p; done[p] = 1
+      for (k in edge) { split(k, a, SUBSEP); if (a[2] == p) { if (--need[a[1]] == 0) queue[++n] = a[1] } }
+    }
+  }' "$file"
+=== report 1-40 ===
+case 001 FAIL  p3 p5 p2 p5 p5 p2 p2 p3 p4 p5 p1 p4 p1 p4 
+case 002 PASS
+case 003 PASS
+case 004 FAIL  p3 p1 p1 p2 p1 p3 p3 p4 
+case 005 PASS
+case 006 PASS
+case 007 PASS
+case 008 PASS
+case 009 FAIL  p3 p5 p5 p4 p2 p4 p3 p4 p1 p3 p1 p5 p2 p1 p4 p5 
+case 010 FAIL  p3 p4 p3 p2 p5 p3 p5 p3 p2 p1 p1 p5 p1 p3 
+case 011 FAIL  p3 p5 p1 p2 p4 p5 p1 p5 p3 p1 p5 p1 
+case 012 FAIL  p1 p3 p1 p3 p5 p1 p3 p5 p4 p5 p4 p5 
+case 013 PASS
+case 014 FAIL  p5 p2 p2 p5 p4 p1 p1 p2 p3 p4 
+case 015 PASS
+case 016 FAIL  p3 p4 p4 p5 p4 p3 p5 p3 p1 p5 p2 p5 p5 p3 
+case 017 FAIL  p3 p1 p4 p2 p2 p3 p2 p4 p5 p1 p4 p2 p2 p3 p1 p3 
+case 018 FAIL  p4 p2 p5 p1 p5 p3 p2 p4 p4 p5 p2 p3 
+case 019 FAIL  p2 p3 p2 p5 p2 p3 p2 p4 p5 p2 
+case 020 FAIL  p2 p5 p4 p5 p1 p2 p1 p2 p5 p1 p5 p1 
+case 021 FAIL  p3 p4 p2 p5 p4 p5 p3 p4 p5 p2 p4 p3 
+case 022 FAIL  p5 p2 p4 p5 p2 p4 p3 p4 p3 p2 p1 p5 p1 p2 
+case 023 FAIL  p4 p5 p2 p4 p5 p2 p4 p5 
+case 024 PASS
+case 025 PASS
+case 026 PASS
+case 027 FAIL  p5 p1 p4 p3 p2 p3 p4 p1 p1 p2 p4 p2 p3 p4 
+case 028 PASS
+case 029 FAIL  p5 p3 p1 p3 p4 p5 p3 p4 p4 p1 p4 p5 p3 p1 
+case 030 PASS
+case 031 PASS
+case 032 FAIL  p4 p3 p4 p1 p1 p2 p2 p3 p3 p1 
+case 033 PASS
+case 034 FAIL  p2 p3 p3 p1 p5 p4 p1 p2 p4 p2 p1 p3 
+case 035 PASS
+case 036 FAIL  p1 p5 p3 p4 p4 p1 p1 p5 p2 p3 p4 p2 p1 p2 
+case 037 PASS
+case 038 FAIL  p2 p1 p1 p4 p3 p4 p3 p2 p1 p3 p1 p3 p2 p4 
+case 039 FAIL  p5 p3 p3 p1 p2 p5 p5 p1 p5 p1 p5 p2 
+case 040 PASS

@@ -1,20 +1,9 @@
---- first 5 ---
-PASS case   1  seed-header[2 1 0] status=1 lines=1
-PASS case   2  seed-header[8 1 1] status=1 lines=1
-PASS case   3  seed-header[8 9 0] status=1 lines=1
-PASS case   4  seed-header[8 2 0] status=0 lines=4
-PASS case   5  seed-header[6 8 0] status=1 lines=1
---- lines 100-102 ---
-PASS case 100  seed-header[5 9 1] status=1 lines=1
-PASS case 101  seed-header[2 5 0] status=1 lines=1
-PASS case 102  seed-header[5 5 0] status=1 lines=1
---- last 3 ---
-PASS case 298  seed-header[7 5 1] status=1 lines=1
-PASS case 299  seed-header[6 1 0] status=0 lines=2
-PASS case 300  seed-header[8 8 1] status=1 lines=1
+`bgrun -n bench bash bench.sh 400` -> job 1, exited 0, log at
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/1/log
 
-TOTAL 300  PASS 300  FAIL 0
---- counts ---
-PASS lines: 300
-FAIL lines: 0
-TOTAL line: TOTAL 300  PASS 300  FAIL 0
+    bench: 400 edges generated, wall 120013 ms, 0.0 edges/ms
+---
+SYNTAX_OK
+---
+-rw-rw---- 1 z z 1382 Oct 27 16:29 RESULT.md
+-rwxrwx--- 1 z z 1401 Oct 27 16:28 src/order.sh

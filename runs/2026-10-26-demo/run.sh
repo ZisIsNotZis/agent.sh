@@ -8,9 +8,10 @@ root=$(cd "$here/../.." && pwd)
 
 rm -rf "$here/session" "$here/work"
 mkdir -p "$here/work"
+cp -r "$here/seed/." "$here/work/"
 
 cd "$here/work" || exit 1
-bash "$root/agent.sh" \
+AGENT_SH_BLOCK_TIMEOUT=90 bash "$root/agent.sh" \
   --task "$(cat "$here/task.txt")" \
   --session "$here/session" \
   --max-turns 26 \

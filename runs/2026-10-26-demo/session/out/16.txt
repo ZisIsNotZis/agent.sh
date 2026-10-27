@@ -1,1 +1,22 @@
-job 2 started, pid 2914728, log /home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/2/log
+#!/usr/bin/env bash
+# order.sh — print one valid build order for the dependency pairs in $1 ("a b" means a needs b).
+# Exit 0 with the order, or exit 1 printing `cycle: <packages>` when the input has a cycle.
+set -u
+file=${1:?usage: order.sh FILE}
+
+awk '
+  { nodes[$1] = 1; nodes[$2] = 1
+    if (($1 SUBSEP $2) in edge) next
+    edge[$1 SUBSEP $2] = 1; need[$1]++ }
+  END {
+dir=/tmp/tmp.Pul4HaqKgq
+--- t1 rc=0
+c
+b
+a
+--- t2 rc=1
+cycle: a b c
+--- t3 rc=1
+cycle: a
+--- t4 rc=0
+

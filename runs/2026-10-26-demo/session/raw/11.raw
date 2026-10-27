@@ -1,2 +1,17 @@
-bash: eval: line 323: syntax error near unexpected token `newline'
-bash: eval: line 323: `cd /home/z/vibe/agent.sh/runs/2026-10-26-demo/work && cp depsort depsort.pre-fix && cp gen.sh gen.sh.pre-fix && sed -i 's|^NF != 2 { printf "depsort: bad line %d: %s\\n", NR, $0 > "/dev/stderr"; exit 2 }$|NF != 2 { err = 1; printf "depsort: bad line %d: %s\\n", NR, $0 > "/dev/stderr"; next }|' depsort && sed -i 's|^END {$|END {\n    if (err) exit 2                       # malformed input wins over any graph walk|' depsort && sed -i 's|n=$(( RANDOM % 7 + 1 ))          # distinct packages, 1..7|n=$(( RANDOM % 7 + 2 ))          # distinct packages, 2..8 (2 needed for forced cycle)|' gen.sh && echo '=== diff depsort ===' && diff -u depsort.pre-fix depsort; echo '=== diff gen.sh ===' && diff -u gen.sh.pre-fix gen.sh; echo '=== depsort lines ===' && sed -n '7,10p' depsort && sed -n '42,46p' depsort && echo '=== gen.sh line 6 ===' && sed -n '6p' gen.sh</parameter>'
+SYNTAX_OK
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/11.sh: line 55: /tmp/t1: Is a directory
+--acyclic--
+awk: warning: command line argument `/tmp/t1' is a directory: skipped
+rc=0
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/11.sh: line 56: /tmp/t2: Is a directory
+--cycle--
+awk: warning: command line argument `/tmp/t2' is a directory: skipped
+rc=0
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/11.sh: line 57: /tmp/t3: Is a directory
+--self--
+awk: warning: command line argument `/tmp/t3' is a directory: skipped
+rc=0
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/11.sh: line 58: /tmp/t4: Is a directory
+--empty--
+awk: warning: command line argument `/tmp/t4' is a directory: skipped
+rc=0

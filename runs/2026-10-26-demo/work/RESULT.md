@@ -1,55 +1,35 @@
-# depsort
+# Fix: cycle detection in src/order.sh
 
-`depsort` is a dependency sorter written as an awk script (`#!/usr/bin/awk -f`).
-It reads pairs of the form `a b` meaning "a needs b" from a file argument or
-from stdin and prints a valid install order.
+## The bug
+`src/order.sh` implemented only Kahn's algorithm. Its cycle branch was an
+explicit TODO: on a cyclic input it printed the partial order it had managed to
+peel and exited 0. The judge (`src/suite.sh`) independently detects cycles with
+its own DFS and, for a cyclic input, requires exit code 1 and output starting
+with `cycle:`. So every cyclic case failed - 185 of 400.
 
-## Behaviour
+The fix adds the missing branch after Kahn peeling: if not all nodes were
+printed, walk unprinted dependency edges recording the path until a node
+repeats, then print `cycle: <nodes on the cycle>` and exit 1 (with a
+`cycle: <start>` fallback if the walk dead-ends). Acyclic behaviour is
+unchanged.
 
-- **Algorithm**: Kahn's algorithm. Among the packages that are currently ready
-  (all dependencies already emitted) the alphabetically smallest one is chosen,
-  so the output is deterministic. Edges are deduplicated and package names are
-  insertion-sorted before the run.
-- **Cycles**: when nodes remain after Kahn's pass, a recursive DFS over the
-  residual graph prints a closed walk of real input edges,
-  `cycle: <n1> <n2> ... <n1>`, and exits 1.
-- **Blank lines** are skipped.
-- **Malformed input**: any line that does not have exactly two fields is
-  reported on stderr as `depsort: bad line <NR>: <line>`; the run continues and
-  the process exits 2.
-- **Input**: a filename argument, or stdin if none is given. Empty input is a
-  success with no output.
+Smoke tests (fresh temp files; /tmp/t1..t4 already existed as directories):
+- `a b` / `b c` -> `c b a`, rc 0
+- `a b` / `b c` / `c a` -> `cycle: a b c`, rc 1
+- `a a` (self-loop) -> `cycle: a`, rc 1
+- empty file -> no output, rc 0
 
-## Exit codes
+## Exact command proving the fix
+    ./src/suite.sh 400
 
-| code | meaning |
-|------|---------|
-| 0 | a valid order was printed |
-| 1 | a cycle was found (closed walk printed) |
-| 2 | at least one malformed input line |
+Result: exit 0, last line `SUMMARY total=400 pass=400 fail=0`.
 
-## Proving it
+## Suite numbers
+- before: `SUMMARY total=400 pass=215 fail=185`
+- after:  `SUMMARY total=400 pass=400 fail=0`
 
-The full suite is 300 randomly generated cases. Each case gets a random graph
-from `gen.sh <seed>` (some forced to contain a cycle) and is checked by an
-independent verifier, `check.awk`, which confirms that the reported order is a
-permutation of the packages respecting every edge, or that the reported cycle is
-a closed walk of real input edges.
+## Benchmark
+`bgrun -n bench bash bench.sh 400` -> job 1, exited 0, log at
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/jobs/1/log
 
-    ./run_cases.sh 300
-
-Single-case spot checks:
-
-    printf 'a b\nb a\n' | ./depsort        # -> cycle: a b a, exit 1
-    printf 'a b\nbogus\n' | ./depsort      # -> stderr bad line 2, exit 2
-    printf 'a b\nc b\nb d\n' | ./depsort   # -> d b a c, exit 0
-
-## Measured results
-
-- `./run_cases.sh 300`: **300 cases generated, 300 passed, 0 failed.**
-- Before the fixes (`gen.sh` produced 1-field lines for n==1, and awk's `END`
-  block overrode the malformed-line `exit 2` with its own status), the same
-  suite gave **289 passed, 11 failed** — the checker caught the real defect.
-
-The pre-fix sources are kept for reference in `depsort.pre-fix` and
-`gen.sh.pre-fix`.
+    bench: 400 edges generated, wall 120013 ms, 0.0 edges/ms

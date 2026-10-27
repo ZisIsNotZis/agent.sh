@@ -1,2 +1,2 @@
-bash: eval: line 300: syntax error near unexpected token `newline'
-bash: eval: line 300: `<｜｜DSML｜｜ calls>'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/8.sh: line 6: syntax error near unexpected token `newline'
+/home/z/vibe/agent.sh/runs/2026-10-26-demo/session/blk/8.sh: line 6: `grep -vc 'PASS' report.txt; grep -v 'FAIL' report.txt</｜｜DSML｜｜ parameter>'
