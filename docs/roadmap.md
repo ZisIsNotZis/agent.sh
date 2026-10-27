@@ -88,11 +88,10 @@ Also decided, because the design left it to the manager: the trajectory stays ch
 
 The row `agent.sh` in `docs/plan/portfolio.tsv` carries `level = decide`, so the degree is his word of the first contract and not a question any more: what he would otherwise take, this file takes above and records with its cost. An earlier line here called the degree `unknown`; that was mine, it fought the register, and the register wins.
 
-### Licence: open, and it is his
+### Licence: landed, and it was his
 
-A licence is a legal grant and it becomes publicly visible the moment it lands, so it is his to pick and not a manager's. The cost of leaving it open is that the repository reads as unusable-by-permission even though the code is public, and that `README.md` has to carry the absence as a named limit. The cost of deciding it is a `LICENSE` file and a line in `README.md`.
-
-Anything other than a permissive licence would be his to argue with himself, so the options the decision needs are: permissive (`MIT`, with the copyright holder he names), a patent-bearing permissive (`Apache-2.0`), or none public until he says otherwise. It does not block M1 and no package here waits on it.
+It was open until it landed: a licence is a legal grant and it becomes publicly visible the moment it is decided, so it was the person's to pick and not a manager's. It is now landed as AGPL-3.0-only — `LICENSE` at the root, `SPDX-License-Identifier: AGPL-3.0-only` in `agent.sh`, and a licence section in `README.md` and `README.zh-CN.md`.
+The section above registers the degree as `decide`, and a licence was the one entry exempt from it; with the file in place there is nothing left here that waits on him for M1.
 
 ### A runnable unattended example: not a separate decision
 
