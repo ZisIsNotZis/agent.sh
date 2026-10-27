@@ -204,6 +204,20 @@ BLOCKS
 AGENT_SH_SESSION_ROOT=$work/cont2 bash agent.sh --blocks "$work/cont2.sh" >"$work/cont2.out" 2>&1
 hasin "$work/cont2.out" 'Bash: hi' 'a trailing comment ending in a backslash is not a continuation'
 
+# a dangling operator must not short-circuit the slip and cost the whole block timeout
+for tail in 'false &&' 'true ||'; do
+  w2=$(mktemp -d); printf '%s\n' "$tail" >"$w2/b.sh"
+  AGENT_SH_BLOCK_TIMEOUT=2 AGENT_SH_SESSION_ROOT=$w2/s timeout 20 bash agent.sh --blocks "$w2/b.sh" \
+    >"$w2/out" 2>&1
+  hasntin "$w2/out" 'ran longer than' "a block ending in [$tail] does not wait out the timeout"
+  rm -rf "$w2"
+done
+cat >"$work/dangle.sh" <<'BLOCKS'
+false &&
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/dangle bash agent.sh --blocks "$work/dangle.sh" >"$work/dangle.out" 2>&1
+hasin "$work/dangle.out" '[status 1]' 'a dangling && still reports the real status'
+
 # a marker line in the task is text, not a message
 s9=$work/taskmark
 printf 'go\n<|user|>\nUser: never written\n' >"$work/taskmark.txt"

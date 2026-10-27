@@ -187,12 +187,17 @@ exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
   # file, so it runs after the block, in the block's own shell, with the block's own status.
   # That line is a redirection with no command word — `>"$dir/$nonce.$?"` — and a redirection is
   # the shell's own parser, which no function a block defines can shadow or replace.
-  # A `#` line goes between the block and the slip line. When the block's last line ends in a
-  # continuation — a command, or a command with a trailing comment, which bash does not continue
-  # either — the continuation joins that `#`, the command ends there, and the slip line still runs
-  # on its own. Without it the slip line becomes part of the last command and the block's output
-  # is silently redirected into the slip file, because the joined text still parses.
-  { printf '%s\n' "$body"; printf '#\n'; printf '>"%s/%s.$?"\n' "$slipdir" "$nonce"; } >"$blk" || return 70
+  # Two lines follow the block, and neither can swallow or short-circuit the other: `__agent_s=$?`
+  # captures the block's own status, and the last line is a redirection with no command word that
+  # names `${__agent_s:-$?}` in a file name. A block whose last line dangles — `false &&`, `true ||`,
+  # a trailing continuation or a comment one — joins the assignment instead of the slip line, so the
+  # slip still runs; then `__agent_s` is unset and `$?`, the status of the joined list, is used, and
+  # that is the block's real status. Before this, such a block short-circuited its own slip and the
+  # run waited out the whole block timeout for a block that had already finished.
+  { printf '%s\n' "$body"
+    printf '#\n'                # a dangling continuation joins this and ends the command
+    printf '__agent_s=$?\n'
+    printf '>"%s/%s.${__agent_s:-$?}"\n' "$slipdir" "$nonce"; } >"$blk" || return 70
 
   # A block that does not parse never reaches the hands: its shell state is untouched and the
   # error is an ordinary result instead of a wait that ends in a timeout.
