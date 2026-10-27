@@ -73,7 +73,7 @@ Facts established along the way, each of which killed a worry rather than a bran
 - **`read -d` takes one character**, the first of its argument — `-d "ab"` stops at `a`. The nonce is what makes the effective delimiter multi-byte and random; his instinct that a random secret per block would be enough is right.
 - **`printf %q` cannot transport the block.** It emits `it\'s` outside any quoting context and bash rejects it: `eval: unexpected EOF while looking for matching '`. The heredoc with a nonce delimiter is the floor, not laziness — measured on a body containing a lone quote.
 - **`0x00–0xFF` is not a hypothetical worth designing for, and it costs nothing to survive.** 512 bytes containing every byte value twice: slip says `bytes=512`, NULs counted as 2, boundary untouched. 60 MB of `/dev/urandom`: `status=0 bytes=60000000`, non-NUL `59766202` — the mismatch *is* the binary alarm, and you send `[binary, not shown]` instead of garbage.
-- **A late background writer is pinned out of the chunk.** A block ran `{ sleep .6; echo LATE; } & echo foreground`: chunk pinned at 11 bytes, the file grew to 23 afterwards, and the late bytes were never attributed to any block. The slip's byte count is what makes this exact; `bgrun` redirects its jobs anyway, so this only appears with a hand-written `&`.
+- **A late background writer is pinned out of the chunk.** A block ran `{ sleep .6; echo LATE; } & echo foreground`: chunk pinned at 11 bytes, the file grew to 23 afterwards, and the late bytes were never attributed to any block. What pins it is the harness taking the file's size when it looks, right after the slip appears; a writer that lands inside that microsecond window is included, which a third review measured at 1 run in 12 for a 1 ms writer. `bgrun` redirects its jobs anyway, so this only appears with a hand-written `&`.
 - **The control channel is unreachable by accident, reachable by digging.** A block printing `/proc/$$/fd` sees `0->pipe 1->raw 2->raw 3->pipe 10->pipe`, so a block that goes looking can find the control pipe. What that buys an attacker is measured in `D10`: with the nonce read off the command stream, a block can speak a slip, and the only thing standing in its way is that the size must match the file.
 
 ### D3. Feature surface and minimality
@@ -110,7 +110,7 @@ Known leak: a subagent's own hands shell also sources it. Keep the file stateles
 
 ### D7. Session state
 
-Trajectory file is the state. One block = one assistant message, one chunk = one user message, both appended as text with the chat-ml markers. Resume re-reads the file. The outer additionally keeps `PWD` so a restarted hands shell lands where the last one was working.
+Trajectory file is the state. One block = one assistant message, one chunk = one user message, both appended as text with the chat-ml markers, and any line a body starts with `<|` is written with a backslash so ordinary output cannot forge a marker. Resume re-reads the file. A restarted hands shell does *not* restore the previous working directory: `cd` lives in the shell that died, and the block that killed it owns that loss.
 
 ### D8. The turn, as landed
 
@@ -119,7 +119,7 @@ Trajectory file is the state. One block = one assistant message, one chunk = one
 - **JSON lives only at the request boundary**, built by `jq` from the trajectory and the prompt file and parsed by `jq` back: the record stays text, and `jq` is a dependency the workspace already allows. Each turn's request is kept as `req.<n>.json` beside its response, because a claim about prefix stability should be checkable against what was actually sent, not against the code that built it.
 - **`--stub` is the model-in-a-file for the turn**, the same idea the blocks driver already uses: a script that reads the request and writes a response. Every invariant of the loop, the meter and resume is checked with it for free, and `complete()` is the one function where a network call can happen.
 - **A block is bounded by the wall clock** (`AGENT_SH_BLOCK_TIMEOUT`, 300 s by default). An unattended run that hangs is the one failure that produces no evidence at all, and the only thing the harness can do about a block reading stdin is to kill its hands — which costs the shell state, and saying so in the message is truthful. Measured: the first demo attempt died on a block waiting for input, so the bound was added rather than a promise in the prompt.
-- **The reply is executed raw.** No fence stripping, no `$ ` trimming, no prose detection: the design says the model's text *is* the block, so a model that writes prose gets prose executed and learns from the error — which is the experiment.
+- **The reply is executed as written, with one exception.** No `$ ` trimming, no prose detection: the design says the model's text *is* the block, so a model that writes prose gets prose executed and learns from the error — which is the experiment. The one exception is a fence line at the edge of a block, removed before execution because backticks are a command substitution and the block would otherwise run twice; the record keeps the text as written, and a fence line inside a block is left alone because rewriting it would corrupt a heredoc the block means to write.
 
 ### D9. Compaction, as landed
 

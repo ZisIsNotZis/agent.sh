@@ -16,9 +16,9 @@ The task is a maintenance job, not a green field: `report.txt` is a 401-line sui
 | the milestone asks for | where it is |
 |---|---|
 | labels `User:` / `Bash:` / `Job:` and no other | two `User:` (the task, then one `/compact`), twenty `Bash:`, one `Job:` |
-| a `Job:` that arrived while no block was running | line 263, `job 1 exited 0 — note: bench`, from `bgrun -n bench bash bench.sh 400` at line 246; the harness's drain waited, the model did not |
+| a `Job:` that arrived while no block was running | line 263, `job 1 exited 0 — note: bench`, from `bgrun -n bench bash bench.sh 400` in the block recorded at line 192; the harness's drain waited, the model never called `bgwait` |
 | one `[truncated:` line naming the full-output file | line 76 (`total 119 lines`, `session/raw/4.raw`) and line 545 (`total 111 lines`, `session/raw/14.raw`) |
-| a compaction boundary with the rebuilt prompt | `<|compact|> kept=…` at line 475 with its `<|summary|>`, and every request after it rebuilt from that summary |
+| a compaction boundary with the rebuilt prompt | `<|compact|> kept=23` at line 476 with its `<|summary|>`, and the next request rebuilt from that summary alone |
 | a meter line on every turn | twenty-one `<|meter|>` lines: twenty turns and one compaction |
 | the prefix never changed | `bash check-prefix.sh`: 20 requests rebuilt from the record and identical to what was sent, 21 requests in the meter, 1 boundary, 19 checked, 0 failed |
 
@@ -40,6 +40,10 @@ Eight runs were paid for before this one. Each failure changed the tree rather t
 6. **The task itself was the next failure.** Asking the model to `bgwait` its own job contradicts how the wake works — the harness delivers the `Job:`, and a run reaped by hand shows nothing — and asking it to "run something long" does not make anything long. The scenario now carries the constraint in the machine: a 90 s block bound and a 120 s benchmark.
 
 Then the independent review (`P7`, two passes) found the boundary itself: the slip was a line of shell the block's own shell ran, so shadowing `builtin` let a block state any status. That is `P8`, and it is why the transport is now a file plus a redirection (`docs/design.md` D11).
+
+## Two things the harness does to the model's text, stated rather than implied
+
+A fence line at the edge of a block — a markdown ```` ``` ```` opener as the first or last non-blank line — is removed before the block is executed, because in bash a pair of backticks is a command substitution and the block would run twice. A fence line anywhere inside the block is left alone: rewriting lines inside a block would corrupt a heredoc it means to write. The trajectory always records what the model wrote, not the version that ran.
 
 ## What this does not claim
 

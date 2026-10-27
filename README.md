@@ -75,7 +75,7 @@ The milestone, its four terms, the not-doing list and every decision taken with 
 
 ## The demo run
 
-[`runs/2026-10-26-demo/`](runs/2026-10-26-demo/) is one unattended run, committed as it happened: the trajectory, the meter, the requests, the workspace the agent left behind, and the command that regenerates all of it. Twenty turns, two background jobs, two truncations, three compactions, 108k prompt tokens, and — the part that matters — `bash check-prefix.sh` rebuilds every request from the record and finds every prefix intact across it. `notes.md` points at the line each piece of evidence sits on, and says what the run cost to get.
+[`runs/2026-10-26-demo/`](runs/2026-10-26-demo/) is one unattended run, committed as it happened: the trajectory, the meter, the requests, the workspace the agent left behind, and the command that regenerates all of it. Twenty turns, one background job it left for the harness to reap, two truncations, one compaction, 83,724 prompt tokens, and — the part that matters — `bash check-prefix.sh` rebuilds every request from the record and finds every prefix intact across it. `notes.md` points at the line each piece of evidence sits on, and says what the run cost to get.
 
 ## Design, and what it cost
 

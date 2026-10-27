@@ -71,8 +71,28 @@ export AGENT_SH_SESSION=$sess AGENT_SH_JOBS=$sess/jobs
 scratch=$sess
 if ((replay)); then
   scratch=$(mktemp -d) || exit 73
-  trap 'rm -rf "$scratch"' EXIT
 fi
+
+# Leaving is not allowed to leave work behind that can still write into the session: the hands
+# and anything they started are killed, and a job that is still pending is named on stderr.
+cleanup() {
+  local c
+  if ((replay == 0)); then
+    for c in "$AGENT_SH_JOBS"/*/; do
+      [[ -f $c/pid && ! -f $c/status ]] || continue
+      printf 'agent.sh: job %s was still running at exit; its shell is killed with the run\n' \
+        "$(basename "$c")" >&2
+    done
+  fi
+  if [[ -s $sess/hands.pid ]]; then
+    kill -- "-$(command cat "$sess/hands.pid" 2>/dev/null)" 2>/dev/null ||
+      kill "$(command cat "$sess/hands.pid" 2>/dev/null)" 2>/dev/null
+  fi
+  [[ -n ${HANDS_PID-} ]] && kill "$HANDS_PID" 2>/dev/null
+  ((replay)) && rm -rf "$scratch"
+  return 0
+}
+trap cleanup EXIT
 slipdir=$sess/slip
 ((replay)) || { mkdir -p "$sess/raw" "$sess/out" "$sess/jobs" "$sess/blk" "$slipdir" || exit 73; }
 
@@ -83,8 +103,17 @@ bgrun() {
   local note='' seq d pid
   if [[ ${1-} == -n ]]; then note=${2-}; shift 2; fi
   (($#)) || { printf 'bgrun: nothing to run\n' >&2; return 2; }
+  # two hands shells share this directory (a subagent's hands sources the same file), so the
+  # counter is read-modify-write under a directory lock rather than a race
+  local waited=0
+  until mkdir "$AGENT_SH_JOBS/.seq.lock" 2>/dev/null; do
+    waited=$((waited + 1))
+    ((waited > 2000)) && { printf 'bgrun: the job counter is locked; giving up\n' >&2; return 1; }
+    sleep 0.005
+  done
   seq=$(( $(cat "$AGENT_SH_JOBS/seq" 2>/dev/null || printf 0) + 1 ))
   printf '%s\n' "$seq" >"$AGENT_SH_JOBS/seq"
+  rmdir "$AGENT_SH_JOBS/.seq.lock" 2>/dev/null
   d=$AGENT_SH_JOBS/$seq
   mkdir -p "$d" || return 1
   printf '%s\n' "$note" >"$d/note"
@@ -152,8 +181,11 @@ exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
 
   # A block that does not parse never reaches the hands: its shell state is untouched and the
   # error is an ordinary result instead of a wait that ends in a timeout.
-  if ! command bash -n "$blk" 2>/dev/null; then
-    command bash -n "$blk" 2>"$raw"
+  # Bash reports an unterminated heredoc as a *warning* and exits 0, so the exit status is not
+  # enough: any complaint at all means the block is not sent, and a heredoc cannot swallow the
+  # slip line and stall the run for the block timeout.
+  if ! complaint=$(command bash -n "$blk" 2>&1) || [[ -n $complaint ]]; then
+    printf '%s\n' "${complaint:-the block did not parse}" >"$raw"
     bytes=$(command wc -c <"$raw"); command head -c "$bytes" "$raw" >"$chunk"
     st=2
     return 0
@@ -184,6 +216,9 @@ exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
   command head -c "$bytes" "$raw" >"$chunk"
   return 0
 }
+
+# a line a body starts with `<|` would be read back as protocol: it is written escaped instead
+esc() { printf '%s' "$1" | sed 's/^<|/\\<|/'; }
 
 # what the hands printed, in the form the model reads: the window, and the refusal of bytes
 show() {               # sets body
@@ -223,9 +258,9 @@ unfence() {            # $1 body; prints the body to execute
         for (i = start + 1; i < stop; i++) print line[i]
       }'
   else
-    # a fence line anywhere else is the same accident in a smaller dose: a markdown habit, never
-    # something to run. It is dropped wherever it appears, and no fence is ever a bash statement.
-    printf '%s\n' "$b" | awk '!/^[[:space:]]*```[A-Za-z0-9_+.-]*[[:space:]]*$/'
+    # anywhere else the body is the model's text and is executed as written: rewriting lines
+    # inside it would corrupt a heredoc, a string or a document the block means to write
+    printf '%s' "$b"
   fi
 }
 
@@ -240,7 +275,7 @@ run_block() {          # $1 body, $2 a note to append after the status; prints, 
       msg=$(printf '[this block ran longer than %ss and was killed, so the shell state it built is gone and a fresh bash is running]' "$block_timeout")
       msg=$(printf 'Bash: %s\n[status 124]' "$msg")
       printf '%s\n' "$msg"
-      printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$(unfence "$1")" "$msg" >>"$traj"
+      printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$(esc "$1")" "$(esc "$msg")" >>"$traj"
       restart_hands
       return 0 ;;
     70|71|72) return "$rc" ;;
@@ -252,8 +287,8 @@ run_block() {          # $1 body, $2 a note to append after the status; prints, 
   [[ -n $note ]] && msg+=$(printf '\n[%s]' "$note")
   printf '%s\n' "$msg"
   # the record keeps one newline between the block and the reply, whatever the block's tail
-  local rec; rec=$(unfence "$1"); rec=${rec%$'\n'}; rec=${rec%$'\n'}
-  printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$rec" "$msg" >>"$traj"
+  local rec=$1; rec=${rec%$'\n'}; rec=${rec%$'\n'}
+  printf '<|assistant|>\n%s\n<|user|>\n%s\n' "$(esc "$rec")" "$(esc "$msg")" >>"$traj"
   return 0
 }
 
@@ -310,8 +345,8 @@ drain() {              # waits out the jobs, one Job: message per job, and count
       # a job that outlives the wait is not a reason to end an unattended run: say so, leave it
       # pending, and let a later drain collect it
       printf 'Job: [no job finished within %ss; %s still running]\n' "$job_wait" "$(pending)"
-      printf '<|user|>\nJob: [no job finished within %ss; %s still running]\n' \
-        "$job_wait" "$(pending)" >>"$traj"
+      printf '<|user|>\n%s\n' \
+        "$(esc "Job: [no job finished within ${job_wait}s; $(pending) still running]")" >>"$traj"
       return 0
     fi
     if ((rc != 0)); then
@@ -338,7 +373,7 @@ drain() {              # waits out the jobs, one Job: message per job, and count
     # the harness waited, not the model: the record carries the message and no invented block
     k=$((k_prev))
     printf 'Job: %s\n' "$body"
-    printf '<|user|>\nJob: %s\n' "$body" >>"$traj"
+    printf '<|user|>\n%s\n' "$(esc "Job: $body")" >>"$traj"
     # a message is only a reap if the job table says so; a hands that answers without reaping
     # would otherwise spin here forever, printing a job that never finished
     if (($(pending) >= k_prev)); then
@@ -415,7 +450,7 @@ parse_traj() {         # fills mrole, mcontent, kept (messages to skip), sumtext
     $0 == "<|summary|>" { flush(); role = "summary"; buf = ""; next }
     /^<\|meter\|>/   { flush(); printf "meter%c%s%c", 0, $0, 0; next }
     /^<\|compact\|>/ { flush(); printf "compact%c%s%c", 0, substr($0, index($0, "kept=") + 5), 0; next }
-    { buf = buf $0 "\n" }
+    { sub(/^\\<\|/, "<|"); buf = buf $0 "\n" }
     END { flush() }
   ' "$traj")
 }
@@ -445,9 +480,10 @@ complete() {           # $1 request, $2 response: the one place a network call c
   if [[ -n $stub ]]; then
     bash "$stub" "$1" "$2"
   else
+    # the key goes in through a config on a pipe: an argv would be readable by every `ps`
     curl -sS --max-time 600 "$api" \
-      -H "Authorization: Bearer ${DEEPSEEK_API_KEY-}" \
-      -H 'Content-Type: application/json' \
+      --config <(printf 'header = "Authorization: Bearer %s"\nheader = "Content-Type: application/json"\n' \
+        "${DEEPSEEK_API_KEY-}") \
       --data-binary @"$1" -o "$2"
   fi
 }
