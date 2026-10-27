@@ -93,6 +93,27 @@ hasin "$work/err.txt" 'blocks, 0 polls' 'a session that ends with no job pending
 wake_traj=$(find "$work/wake" -name traj.md -size +0 | head -1)
 hasin "$wake_traj" 'Job: job 1 exited 0' 'the wake is recorded in the trajectory too'
 
+# a subagent is the same primitive: another agent.sh started through bgrun, with its own session.
+# Nothing new is injected; the point is that the one background primitive already carries it.
+cat >"$work/subagent-child.blocks" <<'BLOCKS'
+echo subagent-ran
+%%
+#
+BLOCKS
+cat >"$work/subagent-parent.blocks" <<'BLOCKS'
+bgrun -n subagent bash agent.sh --blocks "$SUB_BLOCKS" --session "$SUB_SESSION" --lines 20
+%%
+#
+BLOCKS
+SUB_BLOCKS=$work/subagent-child.blocks SUB_SESSION=$work/subagent-session \
+AGENT_SH_SESSION_ROOT=$work/subagent-parent bash agent.sh --blocks "$work/subagent-parent.blocks" \
+  >"$work/subagent.out" 2>"$work/subagent.err"
+hasin "$work/subagent.out" 'Job: job 1 exited 0 — note: subagent' \
+  'a subagent is another agent.sh started through bgrun, and it wakes the parent as Job:'
+child_traj=$(find "$work/subagent-session" -name traj.md -size +0 | head -1)
+hasin "$child_traj" 'Bash: subagent-ran' 'the subagent ran its own block in its own session'
+hasntin "$work/subagent.out" 'Bash: subagent-ran' 'the subagent output stayed in the subagent, not the parent'
+
 # the reviewer's five reproductions of "the reporter can be made to lie": none of them lies now,
 # because the report is a redirection and the block's own file, not a builtin a block can shadow
 cat >"$work/shadow.sh" <<'BLOCKS'

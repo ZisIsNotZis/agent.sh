@@ -18,7 +18,7 @@ The rest of that statement — labels, truncation, `/compact`, prefix matching, 
 
 One milestone and no intermediate gate, as the person set it.
 A package is not a milestone and this milestone is not split into "core" and "polish".
-Status: **done, closed 2026-10-27.** The person closed it with: *"just make sure all your functionalities work, all goal reached, and can call it an end (README stuff)"*. The harness has no known reproducible bug — P7's ninth review pass returned `no-bug-found`, and `bash test/run.sh` holds 104 invariants — and every term below is checked by an observation that was re-run at closure: the invariant suite, the committed demo and its `check-prefix.sh`, and the free `--blocks` tour. No live API call was needed for that closure; the committed trajectory is the live evidence.
+Status: **done, closed 2026-10-27.** The person closed it with: *"just make sure all your functionalities work, all goal reached, and can call it an end (README stuff)"*. The harness has no known reproducible bug — P7's ninth review pass returned `no-bug-found`, and `bash test/run.sh` holds 107 invariants — and every term below is checked by an observation that was re-run at closure: the invariant suite, the committed demo and its `check-prefix.sh`, and the free `--blocks` tour. No live API call was needed for that closure; the committed trajectory is the live evidence.
 
 The four terms it is accepted on, each decidable by an observation rather than by opinion:
 
@@ -52,7 +52,7 @@ Every package runs on idle machine time unless it is marked as spending metered 
 
 ### What the nine passes cost, and what is still true
 
-Eight of the nine passes returned a reproduced defect, 25 in all, and six of those were introduced by the fix for the one before. Each is an invariant now (104 of them), so the harness's claim is not "we were careful" but "these were the attacks, and each one is a test". The ninth pass found nothing.
+Eight of the nine passes returned a reproduced defect, 25 in all, and six of those were introduced by the fix for the one before. Each is an invariant now (107 in the suite), so the harness's claim is not "we were careful" but "these were the attacks, and each one is a test". The ninth pass found nothing.
 What is still true and is *not* a bug being denied: a block that reads its own file can forge its own slip or its own status, and can append to `traj.md`; a block can also name its own sentinel with `compgen -A variable`. Those are the declared no-sandbox boundary — the block runs as the same user in the same tree — and they are written down with reproductions in `docs/design.md` D11 rather than papered over.
 
 ### P8 landed, because the person's acceptance is "no bug"
@@ -105,3 +105,4 @@ It reads like something missing, but it is exactly what M1 delivers — `runs/20
 - `test/run.sh` — the invariant check P1 lands, and the one command the M1 acceptance names.
 - `runs/2026-10-26-demo/` — the committed live trajectory, its meter and requests, and `check-prefix.sh`, re-run at closure with 21 requests, 1 boundary, 19 checked, 0 failed.
 - `bash agent.sh --blocks examples/tour.sh` — the free run that exercises the same labels, `bgrun`/`bgwait` and truncation without an API call.
+- `test/run.sh` also carries the original wish-list's other shapes as bgrun recipes: a timer or todo note is `bgrun -n … sleep …`, and a subagent is another `agent.sh` through `bgrun`, checked with its own session and trajectory. First-class role prompts and a recursion budget are still the future paragraph in `README.md`, not a hidden claim.

@@ -38,7 +38,7 @@ bash agent.sh --task 'report the three largest files in this repo, with sizes' -
 - **A block that does not parse never reaches the shell** and is reported as a syntax error with `[status 2]`.
 - **Truncation with the raw file named.** Long output is cut to the last `--lines N` (default 100) and the header names the block's own raw file, which the model pages with `sed -n` — the full output is never copied and never re-sent.
 - **Binary output is refused**, not encoded: `[binary output, N bytes, not shown]`.
-- **Background work.** `bgrun [-n note] cmd…` starts a job and returns at once; a finished job starts a turn of its own as a `Job:` message carrying its note, so nothing is spliced into a block still being read.
+- **Background work.** `bgrun [-n note] cmd…` starts a job and returns at once; a finished job starts a turn of its own as a `Job:` message carrying its note, so nothing is spliced into a block still being read. That one primitive is also the timer, the todo reminder (`bgrun -n 'check the build' sleep 900`) and the subagent (`bgrun -n worker bash agent.sh --session … --task …`, which gets its own hands and trajectory).
 - **A meter line on every turn** — `<|meter|>` with `prompt`, `hit`, `miss`, `out` and the running total — appended to the trajectory and printed to stderr.
 - **Compaction as an appended message**, so the prompt prefix never changes: `--compact-at N` compacts once a turn's prompt reaches `N` tokens.
 - **Resume that only ever appends** (`--resume`), and `--stub FILE` to replace the API with a script for a free, deterministic run — that is what `test/run.sh` uses.
@@ -114,11 +114,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md). The short version: every bug found bec
 
 ## Roadmap
 
-**Closed** — the one milestone, `M1`, is closed on 2026-10-27; its packages `P1`–`P8` are all landed: the boundary (`test/run.sh`), the hands' env and `bgrun`/`bgwait`, the turn with resume and the meter line, the system prompt, `/compact` with prefix stability, the demo run, independent review, and the reporter a block cannot shadow. `bash test/run.sh` checks all 104 invariants with no metered call; `runs/2026-10-26-demo/` holds the live trajectory they were built for — twenty turns, one `Job:`, two truncations, one compaction, 83,724 prompt tokens, and `bash runs/2026-10-26-demo/check-prefix.sh` rebuilds all 20 requests from the record with 0 failed. The ninth independent review pass found no bug.
+**Closed** — the one milestone, `M1`, is closed on 2026-10-27; its packages `P1`–`P8` are all landed: the boundary (`test/run.sh`), the hands' env and `bgrun`/`bgwait`, the turn with resume and the meter line, the system prompt, `/compact` with prefix stability, the demo run, independent review, and the reporter a block cannot shadow. `bash test/run.sh` checks all 107 invariants with no metered call; `runs/2026-10-26-demo/` holds the live trajectory they were built for — twenty turns, one `Job:`, two truncations, one compaction, 83,724 prompt tokens, and `bash runs/2026-10-26-demo/check-prefix.sh` rebuilds all 20 requests from the record with 0 failed. The ninth independent review pass found no bug.
 
 No live API call is needed to verify any of this: the committed run is the live evidence, and the free `--blocks` and `--stub` paths exercise the same loop. What is deliberately absent is decided: no tool-call protocol (that is the project), no sandbox, no tmux, no pty, no Python, no streaming in v0, no live output while a block runs.
 
-The future this is aiming at: one primitive — a process in the background — carrying subagents, timers and reminders, with the harness small enough that a bug in it is a thing a reader can find. Whether the run is any good remains a reader's judgement; the harness's own claim is that it has no reproducible bug.
+The future this is aiming at: first-class roles and recursion on top of the same background-process primitive, carrying subagents, timers and reminders, with the harness small enough that a bug in it is a thing a reader can find. Whether the run is any good remains a reader's judgement; the harness's own claim is that it has no reproducible bug.
 
 ## The demo run
 
