@@ -222,6 +222,28 @@ AGENT_SH_JOB_WAIT=2 AGENT_SH_SESSION_ROOT=$work/fakewait timeout 15 bash agent.s
 hasin "$work/fakewait.err" 'did not reap anything' 'the un-reaped job is reported, not repeated'
 hasntin "$work/fakewait.out" 'never' 'no invented job message got through'
 
+# a block that starts its own shell must not eat the transport
+cat >"$work/nested.sh" <<'BLOCKS'
+bash
+%%
+echo next-block-survived
+BLOCKS
+AGENT_SH_BLOCK_TIMEOUT=5 AGENT_SH_SESSION_ROOT=$work/nested timeout 30 bash agent.sh \
+  --blocks "$work/nested.sh" >"$work/nested.out" 2>&1
+hasin "$work/nested.out" 'next-block-survived' 'a block that starts a nested shell cannot eat the next one'
+hasntin "$work/nested.out" 'ran longer than' 'and it does not turn into a timeout either'
+
+# a fenced block with prose after the closing fence runs the fence and nothing else
+cat >"$work/prose.sh" <<'BLOCKS'
+```bash
+echo fenced-content
+```
+this prose was never meant to run
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/prose bash agent.sh --blocks "$work/prose.sh" >"$work/prose.out" 2>&1
+hasin "$work/prose.out" 'Bash: fenced-content' 'the fenced part runs'
+hasntin "$work/prose.out" 'never meant to run' 'the prose after the closing fence does not'
+
 # a burst of stray boundary bytes is skipped until the real slip arrives
 cat >"$work/burst.sh" <<'BLOCKS'
 for i in $(seq 1 70); do printf '\002' >&10; done 2>/dev/null; echo payload-ran

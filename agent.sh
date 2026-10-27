@@ -159,7 +159,10 @@ exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
     return 0
   fi
 
-  printf '. "%s" >"%s" 2>&1\n' "$blk" "$raw" >&"${HANDS[1]}" 2>/dev/null || return 70
+  # stdin is /dev/null for the block: the hands' own stdin carries the next command, and a block
+  # that starts a nested shell would otherwise eat the transport — and a model would only ever do
+  # that by accident, since nothing can type at it
+  printf '. "%s" >"%s" 2>&1 </dev/null\n' "$blk" "$raw" >&"${HANDS[1]}" 2>/dev/null || return 70
 
   # the slip is a file, so the harness has to look for it; the nonce in its name is what makes
   # a stale or forged file useless, and the clock is what keeps a block from hanging the run
@@ -204,13 +207,21 @@ show() {               # sets body
 # a markdown fence is a command substitution to bash: the block would run, and then run again
 # with its own output as the command. Strip one when the whole block is wrapped in one.
 unfence() {            # $1 body; prints the body to execute
-  local b=$1 first last
-  first=${b%%$'\n'*}
-  last=$(printf '%s\n' "$b" | awk 'NF { l = $0 } END { print l }')
-  if [[ $first =~ ^\`\`\`[A-Za-z0-9_+.-]*$ && $last == '```' ]]; then
-    printf '%s\n' "$b" | awk '{ line[NR] = $0 }
-      END { n = NR; while (n > 1 && line[n] ~ /^[[:space:]]*$/) n--
-            for (i = 1; i <= NR; i++) if (i != 1 && i != n) print line[i] }'
+  local b=$1 first
+  first=$(printf '%s\n' "$b" | awk 'NF { print; exit }')
+  if [[ $first =~ ^\`\`\`[A-Za-z0-9_+.-]*$ ]]; then
+    # a fence is a command substitution to bash, so the fence goes: the block is what lies
+    # between the first fence line and the next one, and prose after the closing fence was
+    # never meant to run — taking it with the fence is cheaper than explaining it every turn
+    printf '%s\n' "$b" | awk '
+      { line[NR] = $0 }
+      END {
+        start = 0; stop = 0
+        for (i = 1; i <= NR; i++) if (line[i] ~ /^[[:space:]]*$/) continue; else { start = i; break }
+        for (i = start + 1; i <= NR; i++) if (line[i] ~ /^[[:space:]]*```[[:space:]]*$/) { stop = i; break }
+        if (stop == 0) { for (i = start + 1; i <= NR; i++) print line[i]; exit }
+        for (i = start + 1; i < stop; i++) print line[i]
+      }'
   else
     printf '%s' "$b"
   fi
