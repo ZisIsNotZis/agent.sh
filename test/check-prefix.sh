@@ -48,6 +48,7 @@ boundaries=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
 # --- 1. the trajectory is the request that was sent -----------------------------------------
 requests=0
 rebuilt=0
+prev_count=1000000
 exempt_file=$(mktemp) || exit 73
 trap 'rm -f "$exempt_file"' EXIT
 
@@ -70,13 +71,22 @@ if compgen -G "$reqdir/req.*.json" >/dev/null; then
        cmp -s "$sent_file" "$rebuilt_file"; then
       rebuilt=$((rebuilt + 1))
       printf 'turn %-4s rebuilt from the trajectory, identical to what was sent\n' "$f"
-      # a request that carries the summary at the front is the one after a boundary, and it is
-      # the only one the cache can legitimately miss; that fact is read off the request itself,
-      # never off a meter field the record could assert
-      if jq -e '.messages[1].content | startswith("User: [everything before this point, summarised]")' \
-           "$sent_file" >/dev/null 2>&1; then
+      # The request after a boundary is the only one the cache can legitimately miss, and it is
+      # identified by two facts about the requests themselves: it carries the summary at the
+      # front, and the request before it did not. Every later turn carries the summary too, so
+      # "carries a summary" alone would exempt the rest of the session.
+      # A boundary is a *new* summary: the request carries one, and it is not the one the
+      # previous request carried. "Carries a summary" alone would exempt every later turn.
+      # A boundary is a *shorter* request that carries a summary: the prefix was rebuilt, so this
+      # request has fewer messages than the one before it. Text cannot tell them apart (two
+      # compactions can produce the same summary), and "carries a summary" would exempt the whole
+      # rest of the session.
+      cur=$(jq -r '.messages[1].content // ""' "$sent_file")
+      cnt=$(jq '.messages | length' "$sent_file")
+      if [[ $cur == 'User: [everything before this point, summarised]'* ]] && (( cnt < prev_count )); then
         printf '%s\n' "$f" >>"$exempt_file"
       fi
+      prev_count=$cnt
     else
       printf 'turn %-4s THE RECORD DOES NOT REBUILD THIS REQUEST\n' "$f"; failed=1
     fi

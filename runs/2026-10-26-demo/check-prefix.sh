@@ -48,6 +48,9 @@ boundaries=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
 # --- 1. the trajectory is the request that was sent -----------------------------------------
 requests=0
 rebuilt=0
+prev_count=1000000
+exempt_file=$(mktemp) || exit 73
+trap 'rm -f "$exempt_file"' EXIT
 
 # the delivered trajectory must be the session's own copy: the milestone points at runs/<demo>/traj.md,
 # so a check that replays session/traj.md while a reader reads another file proves nothing
@@ -60,17 +63,34 @@ if compgen -G "$reqdir/req.*.json" >/dev/null; then
   printf 'the record rebuilds every request\n'
   for f in $(ls "$reqdir"/req.*.json | sed -n 's/.*\/req\.\([0-9][0-9]*\)\.json$/\1/p' | sort -n); do
     requests=$((requests + 1))
-    if ! jq -S . "$reqdir/req.$f.json" >"$reqdir/.sent.$f" 2>/dev/null; then
+    sent_file=$(mktemp); rebuilt_file=$(mktemp)
+    if ! jq -S . "$reqdir/req.$f.json" >"$sent_file" 2>/dev/null; then
       printf 'turn %-4s UNREADABLE request file\n' "$f"; failed=1; continue
     fi
-    if bash "$agent" --replay "$reqdir" "$f" >"$reqdir/.rebuilt.$f" 2>/dev/null &&
-       cmp -s "$reqdir/.sent.$f" "$reqdir/.rebuilt.$f"; then
+    if bash "$agent" --replay "$reqdir" "$f" >"$rebuilt_file" 2>/dev/null &&
+       cmp -s "$sent_file" "$rebuilt_file"; then
       rebuilt=$((rebuilt + 1))
       printf 'turn %-4s rebuilt from the trajectory, identical to what was sent\n' "$f"
+      # The request after a boundary is the only one the cache can legitimately miss, and it is
+      # identified by two facts about the requests themselves: it carries the summary at the
+      # front, and the request before it did not. Every later turn carries the summary too, so
+      # "carries a summary" alone would exempt the rest of the session.
+      # A boundary is a *new* summary: the request carries one, and it is not the one the
+      # previous request carried. "Carries a summary" alone would exempt every later turn.
+      # A boundary is a *shorter* request that carries a summary: the prefix was rebuilt, so this
+      # request has fewer messages than the one before it. Text cannot tell them apart (two
+      # compactions can produce the same summary), and "carries a summary" would exempt the whole
+      # rest of the session.
+      cur=$(jq -r '.messages[1].content // ""' "$sent_file")
+      cnt=$(jq '.messages | length' "$sent_file")
+      if [[ $cur == 'User: [everything before this point, summarised]'* ]] && (( cnt < prev_count )); then
+        printf '%s\n' "$f" >>"$exempt_file"
+      fi
+      prev_count=$cnt
     else
       printf 'turn %-4s THE RECORD DOES NOT REBUILD THIS REQUEST\n' "$f"; failed=1
     fi
-    rm -f "$reqdir/.sent.$f" "$reqdir/.rebuilt.$f"
+    rm -f "$sent_file" "$rebuilt_file"
   done
 else
   printf 'the record rebuilds every request: no req.*.json here, so this check cannot run\n'
@@ -79,7 +99,7 @@ fi
 
 # --- 2. the cache found the previous prompt --------------------------------------------------
 printf '\nthe cache arithmetic\n'
-awk -v chunk=1024 '
+awk -v chunk=1024 -v exempt_list="$(tr '\n' ' ' <"$exempt_file")" '
   function field(line, name,   i, a) {
     split(line, a, " ")
     for (i in a) if (index(a[i], name "=") == 1) return substr(a[i], length(name) + 2)
@@ -90,7 +110,9 @@ awk -v chunk=1024 '
     prompt = field($0, "prompt"); hit = field($0, "hit"); compact = field($0, "compact")
     n++
     label = (compact == "1") ? "compact" : "turn " field($0, "turn")
-    if (exempt) { verdict = "first request after a boundary, exempt"; exempt = 0 }
+    postboundary = (index(" " exempt_list " ", " " field($0, "turn") " ") > 0)
+    if (exempt) { verdict = (postboundary ? "first request after a boundary, exempt" \
+                                           : "INEXCUSABLE after a boundary: the request does not carry the summary"); if (!postboundary) failed++ ; exempt = 0 }
     else if (n == 1) verdict = "first request, nothing to hit"
     else if (prev + 0 <= chunk) verdict = "previous prompt too small to verify against"
     else if (hit + 0 >= prev - chunk) { verdict = "prefix held (previous prompt " prev ")"; checked++ }

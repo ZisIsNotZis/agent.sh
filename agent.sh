@@ -84,11 +84,13 @@ cleanup() {
         "$(basename "$c")" >&2
     done
   fi
-  if [[ -s $sess/hands.pid ]]; then
-    kill -- "-$(command cat "$sess/hands.pid" 2>/dev/null)" 2>/dev/null ||
-      kill "$(command cat "$sess/hands.pid" 2>/dev/null)" 2>/dev/null
+  if ((replay == 0)); then
+    if [[ -s $sess/hands.pid ]]; then
+      kill -- "-$(command cat "$sess/hands.pid" 2>/dev/null)" 2>/dev/null ||
+        kill "$(command cat "$sess/hands.pid" 2>/dev/null)" 2>/dev/null
+    fi
+    [[ -n ${HANDS_PID-} ]] && kill "$HANDS_PID" 2>/dev/null
   fi
-  [[ -n ${HANDS_PID-} ]] && kill "$HANDS_PID" 2>/dev/null
   ((replay)) && rm -rf "$scratch"
   return 0
 }
@@ -105,12 +107,19 @@ bgrun() {
   (($#)) || { printf 'bgrun: nothing to run\n' >&2; return 2; }
   # two hands shells share this directory (a subagent's hands sources the same file), so the
   # counter is read-modify-write under a directory lock rather than a race
-  local waited=0
+  local waited=0 owner=''
   until mkdir "$AGENT_SH_JOBS/.seq.lock" 2>/dev/null; do
     waited=$((waited + 1))
+    # a lock left behind by a killed shell would disable bgrun for the rest of the session, so
+    # one whose owner is gone (or that is old) is reclaimed rather than waited on
+    owner=$(cat "$AGENT_SH_JOBS/.seq.lock/pid" 2>/dev/null)
+    if { [[ -n $owner ]] && ! kill -0 "$owner" 2>/dev/null; } || ((waited > 100)); then
+      rm -rf "$AGENT_SH_JOBS/.seq.lock" 2>/dev/null
+    fi
     ((waited > 2000)) && { printf 'bgrun: the job counter is locked; giving up\n' >&2; return 1; }
     sleep 0.005
   done
+  printf '%s\n' "$$" >"$AGENT_SH_JOBS/.seq.lock/pid" 2>/dev/null
   seq=$(( $(cat "$AGENT_SH_JOBS/seq" 2>/dev/null || printf 0) + 1 ))
   printf '%s\n' "$seq" >"$AGENT_SH_JOBS/seq"
   rmdir "$AGENT_SH_JOBS/.seq.lock" 2>/dev/null
@@ -177,6 +186,15 @@ exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
   # file, so it runs after the block, in the block's own shell, with the block's own status.
   # That line is a redirection with no command word — `>"$dir/$nonce.$?"` — and a redirection is
   # the shell's own parser, which no function a block defines can shadow or replace.
+  # A block whose last line ends in a line continuation would join with the slip line below it and
+  # redirect the block's own output into the slip file — silent, and `bash -n` cannot see it because
+  # the joined text parses. That block is incomplete anyway, so it is refused like any other.
+  if [[ $(printf '%s\n' "$body" | awk 'NF { l = $0 } END { n = 0; while (substr(l, length(l) - n, 1) == "\\") n++; print (n % 2) }') == 1 ]]; then
+    printf 'the block ends with a line continuation, so its last command never ends\n' >"$raw"
+    bytes=$(command wc -c <"$raw"); command head -c "$bytes" "$raw" >"$chunk"
+    st=2
+    return 0
+  fi
   { printf '%s\n' "$body"; printf '>"%s/%s.$?"\n' "$slipdir" "$nonce"; } >"$blk" || return 70
 
   # A block that does not parse never reaches the hands: its shell state is untouched and the
@@ -549,7 +567,7 @@ compact() {            # appends the command, then a compact record carrying the
   [[ -n $summary ]] || { printf 'agent.sh: compaction: an empty summary, so nothing was compacted\n' >&2; return 1; }
   # the command is a real user message, and the record is what a resumed run rebuilds from
   printf '<|user|>\nUser: /compact\n' >>"$traj"
-  printf '<|compact|> kept=%s\n<|summary|>\n%s\n' "$((before + 1))" "$summary" >>"$traj"
+  printf '<|compact|> kept=%s\n<|summary|>\n%s\n' "$((before + 1))" "$(esc "$summary")" >>"$traj"
   compacts=$((compacts + 1))
   pt=$(jq -r '.usage.prompt_tokens // 0' "$res")
   hit=$(jq -r '.usage.prompt_cache_hit_tokens // 0' "$res")
@@ -564,7 +582,7 @@ compact() {            # appends the command, then a compact record carrying the
 }
 
 run_task() {
-  [[ -n ${task-} ]] && printf '<|user|>\nUser: %s\n' "$task" >>"$traj"
+  [[ -n ${task-} ]] && printf '<|user|>\n%s\n' "$(esc "User: $task")" >>"$traj"
   while ((turn_i < max_turns)); do
     turn || return 1
     if ((stop_now)); then
