@@ -209,6 +209,30 @@ else
   printf 'FAIL the task turned a marker line into a message\n'; fail=1
 fi
 
+# bgrun is fast twice in a row, and leaves no lock behind in the session
+cat >"$work/twice.sh" <<'BLOCKS'
+bgrun -n a true
+bgrun -n b true
+BLOCKS
+start=$SECONDS
+AGENT_SH_SESSION_ROOT=$work/twice timeout 30 bash agent.sh --blocks "$work/twice.sh" >"$work/twice.out" 2>&1
+(( SECONDS - start < 3 )) && printf 'ok   two bgruns in a row do not queue behind a lock\n' \
+  || { printf 'FAIL the job lock slowed the second bgrun\n'; fail=1; }
+hasntin "$(find "$work/twice" -name traj.md | head -1)" 'seq.lock' 'and no lock file reaches the record'
+if find "$work/twice" -name '.seq.lock' | grep -q .; then
+  printf 'FAIL the job lock was left behind in the session\n'; fail=1
+else
+  printf 'ok   no job lock is left behind in the session\n'
+fi
+
+# a comment line ending in a backslash is not a continuation, so the block is not refused
+cat >"$work/comment.sh" <<'BLOCKS'
+echo one
+# note: this ends in a backslash \
+BLOCKS
+AGENT_SH_SESSION_ROOT=$work/comment bash agent.sh --blocks "$work/comment.sh" >"$work/comment.out" 2>&1
+hasin "$work/comment.out" 'Bash: one' 'a comment ending in a backslash does not refuse the block'
+
 # a job-counter lock whose owner is gone is reclaimed, not waited on
 cat >"$work/lock.sh" <<'BLOCKS'
 mkdir -p "$AGENT_SH_JOBS/.seq.lock"; echo 999999 > "$AGENT_SH_JOBS/.seq.lock/pid"
@@ -432,6 +456,15 @@ if AGENT_SH=$PWD/agent.sh bash test/check-prefix.sh "$work/broken" >/dev/null 2>
   printf 'FAIL check-prefix passed a trajectory whose prefix was rewritten\n'; fail=1
 else
   printf 'ok   check-prefix fails a trajectory whose prefix was rewritten\n'
+fi
+
+# a compaction right after turn one is honest, and the checker must not call it a loss
+s12=$work/earlycompact
+bash agent.sh --task go --session "$s12" --stub "$wake_stub" --max-turns 4 --compact-at 2000 >/dev/null 2>&1
+if AGENT_SH=$PWD/agent.sh bash test/check-prefix.sh "$s12" >/dev/null 2>&1; then
+  printf 'ok   a compaction after the first turn is not mistaken for a lost prefix\n'
+else
+  printf 'FAIL the checker rejected an honest early-compaction run\n'; fail=1
 fi
 
 # the exemption cannot be forged: a meter field claiming a compaction does not exempt anything

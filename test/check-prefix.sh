@@ -48,9 +48,9 @@ boundaries=$(grep -c '^<|compact|>' "$traj" 2>/dev/null || true)
 # --- 1. the trajectory is the request that was sent -----------------------------------------
 requests=0
 rebuilt=0
-prev_count=1000000
 exempt_file=$(mktemp) || exit 73
-trap 'rm -f "$exempt_file"' EXIT
+prev_json=$(mktemp) || exit 73
+trap 'rm -f "$exempt_file" "$prev_json"' EXIT
 
 # the delivered trajectory must be the session's own copy: the milestone points at runs/<demo>/traj.md,
 # so a check that replays session/traj.md while a reader reads another file proves nothing
@@ -59,6 +59,10 @@ if [[ -f $dir/session/traj.md ]] && ! cmp -s "$dir/session/traj.md" "$traj"; the
   printf 'FAIL %s and %s differ\n' "$traj" "$dir/session/traj.md"
   failed=1
 fi
+
+# A turn is exempt only when its request is *not* an extension of the one before it — the prefix
+# really was rebuilt — and it carries the summary. Both facts are read off the requests that were
+# actually sent, so a record edited on its own cannot create an exemption.
 if compgen -G "$reqdir/req.*.json" >/dev/null; then
   printf 'the record rebuilds every request\n'
   for f in $(ls "$reqdir"/req.*.json | sed -n 's/.*\/req\.\([0-9][0-9]*\)\.json$/\1/p' | sort -n); do
@@ -71,26 +75,33 @@ if compgen -G "$reqdir/req.*.json" >/dev/null; then
        cmp -s "$sent_file" "$rebuilt_file"; then
       rebuilt=$((rebuilt + 1))
       printf 'turn %-4s rebuilt from the trajectory, identical to what was sent\n' "$f"
-      # The request after a boundary is the only one the cache can legitimately miss, and it is
-      # identified by two facts about the requests themselves: it carries the summary at the
-      # front, and the request before it did not. Every later turn carries the summary too, so
-      # "carries a summary" alone would exempt the rest of the session.
-      # A boundary is a *new* summary: the request carries one, and it is not the one the
-      # previous request carried. "Carries a summary" alone would exempt every later turn.
-      # A boundary is a *shorter* request that carries a summary: the prefix was rebuilt, so this
-      # request has fewer messages than the one before it. Text cannot tell them apart (two
-      # compactions can produce the same summary), and "carries a summary" would exempt the whole
-      # rest of the session.
-      cur=$(jq -r '.messages[1].content // ""' "$sent_file")
-      cnt=$(jq '.messages | length' "$sent_file")
-      if [[ $cur == 'User: [everything before this point, summarised]'* ]] && (( cnt < prev_count )); then
-        printf '%s\n' "$f" >>"$exempt_file"
-      fi
-      prev_count=$cnt
     else
       printf 'turn %-4s THE RECORD DOES NOT REBUILD THIS REQUEST\n' "$f"; failed=1
     fi
-    rm -f "$sent_file" "$rebuilt_file"
+    rm -f "$rebuilt_file"
+
+    if [[ -s $prev_json ]]; then
+      k=$(jq '.messages | length' "$prev_json")
+      cur=$(jq -r '.messages[1].content // ""' "$sent_file")
+      is_summary=0
+      [[ $cur == 'User: [everything before this point, summarised]'* ]] && is_summary=1
+      # a normal turn appends, so it must be strictly longer *and* contain the previous request;
+      # an equal-length request means the prefix was rebuilt, even when the two look alike
+      if (( $(jq '.messages | length' "$sent_file") > k )) &&
+         jq -c --argjson k "$k" '.messages[0:$k]' "$sent_file" >"$sent_file.cut" 2>/dev/null &&
+         cmp -s "$sent_file.cut" <(jq -c '.messages' "$prev_json"); then
+        :   # an extension: the prefix held
+      elif (( is_summary )); then
+        printf 'turn %-4s rebuilt prefix: not an extension, and it carries a summary\n' "$f"
+        printf '%s\n' "$f" >>"$exempt_file"
+      else
+        printf 'turn %-4s NOT AN EXTENSION, and no summary: the prefix was rebuilt without one\n' "$f"
+        failed=1
+      fi
+      rm -f "$sent_file.cut"
+    fi
+    cp "$sent_file" "$prev_json"
+    rm -f "$sent_file"
   done
 else
   printf 'the record rebuilds every request: no req.*.json here, so this check cannot run\n'

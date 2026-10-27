@@ -122,6 +122,7 @@ bgrun() {
   printf '%s\n' "$$" >"$AGENT_SH_JOBS/.seq.lock/pid" 2>/dev/null
   seq=$(( $(cat "$AGENT_SH_JOBS/seq" 2>/dev/null || printf 0) + 1 ))
   printf '%s\n' "$seq" >"$AGENT_SH_JOBS/seq"
+  rm -f "$AGENT_SH_JOBS/.seq.lock/pid" 2>/dev/null
   rmdir "$AGENT_SH_JOBS/.seq.lock" 2>/dev/null
   d=$AGENT_SH_JOBS/$seq
   mkdir -p "$d" || return 1
@@ -189,7 +190,13 @@ exec_block() {         # $1 body, $2 seconds to wait; sets raw chunk st bytes
   # A block whose last line ends in a line continuation would join with the slip line below it and
   # redirect the block's own output into the slip file — silent, and `bash -n` cannot see it because
   # the joined text parses. That block is incomplete anyway, so it is refused like any other.
-  if [[ $(printf '%s\n' "$body" | awk 'NF { l = $0 } END { n = 0; while (substr(l, length(l) - n, 1) == "\\") n++; print (n % 2) }') == 1 ]]; then
+  if [[ $(printf '%s\n' "$body" | awk '
+        NF { l = $0 }
+        END {
+          if (l ~ /^[[:space:]]*#/) { print 0; exit }   # bash does not continue a comment
+          n = 0; while (substr(l, length(l) - n, 1) == "\\") n++
+          print (n % 2)
+        }') == 1 ]]; then
     printf 'the block ends with a line continuation, so its last command never ends\n' >"$raw"
     bytes=$(command wc -c <"$raw"); command head -c "$bytes" "$raw" >"$chunk"
     st=2
